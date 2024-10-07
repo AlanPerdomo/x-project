@@ -15,22 +15,23 @@ for (const folder of commandFolders) {
         const command = require(filePath);
         if ('data' in command && 'execute' in command){
             commands.push(command.data.toJSON());
+            console.log(`[COMMAND] ${command.data.name} has been loaded!`)
         }else{
             console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
-    }}}
-    const rest = new REST().setToken(token);
+       }
+    }
+}
+const rest = new REST().setToken(token);
    
-    (async () => {
+(async () => {
         try {
             console.log(`Started refreshing ${commands.length} application (/) commands.`);
     
-            const data = await rest.put(
-                
+            const data = await rest.put(                
                 Routes.applicationCommands(clientId),
                 { body: commands },
             );
-            console.log(Routes.applicationCommands(clientId)),
-    
+              
             console.log(`Successfully reloaded ${data.length} application (/) commands.`);
         } catch (error) {
             console.error(error);
