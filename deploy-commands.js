@@ -7,9 +7,6 @@ const commands = [];
 
 const foldersPath = path.join(__dirname, 'commands');
 const commandFolders = fs.readdirSync(foldersPath);
-
-console.log(guildId, clientId, token);
-
 for (const folder of commandFolders) {
     const commandsPath = path.join(foldersPath,folder);
     const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
@@ -28,9 +25,11 @@ for (const folder of commandFolders) {
             console.log(`Started refreshing ${commands.length} application (/) commands.`);
     
             const data = await rest.put(
-                Routes.applicationGuildCommands(clientId, guildId),
+                
+                Routes.applicationCommands(clientId),
                 { body: commands },
             );
+            console.log(Routes.applicationCommands(clientId)),
     
             console.log(`Successfully reloaded ${data.length} application (/) commands.`);
         } catch (error) {
