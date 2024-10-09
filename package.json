@@ -12,7 +12,8 @@
   },
   "keywords": [
     "Discord",
-    "Bot"
+    "Bot",
+    "NodeJS"
   ],
   "author": "Alan Perdomo",
   "license": "ISC",
@@ -23,6 +24,7 @@
   "dependencies": {
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.5",
+    "pg": "^8.13.0",
     "prettier": "^3.3.3"
   }
 }
