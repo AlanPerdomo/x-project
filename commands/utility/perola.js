@@ -22,6 +22,7 @@ module.exports = {
         }
         try {
             await userService.cadastrar(data);
+            console.log('Cadastrado com sucesso!');
         } catch (error) {
             console.log(error);
         }
