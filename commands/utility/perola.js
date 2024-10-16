@@ -3,17 +3,14 @@ const {SlashCommandBuilder} = require('discord.js');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('perola')
-        .setDescription('Replies with Perola!!!')
+        .setDescription('🍓Salva a Perola🍓')
         .addStringOption(option =>
             option.setName('perola')
-                .setDescription('Perola asdf')
-        )
-        .addStringOption(option =>
-            option.setName('perola2')
-                .setDescription('Perola casinhas')
+                .setDescription('Manda a Braba')
+                .setRequired(true)
         ),
-
     async execute(interaction) {
-        await interaction.reply('Perola!');
+        console.log(interaction.options);
+        await interaction.reply(`${interaction.options.getString('perola')}`);
     },
 }
