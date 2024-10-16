@@ -1,4 +1,5 @@
-const {SlashCommandBuilder} = require('discord.js');
+const {SlashCommandBuilder, Options} = require('discord.js');
+const { userService } = require('../services/UserService');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -6,11 +7,24 @@ module.exports = {
         .setDescription('🍓Salva a Perola🍓')
         .addStringOption(option =>
             option.setName('perola')
-                .setDescription('Manda a Braba')
+                .setDescription('Manda as Braba')
                 .setRequired(true)
         ),
     async execute(interaction) {
-        console.log(interaction.options);
-        await interaction.reply(`${interaction.options.getString('perola')}`);
-    },
+        let data = {
+            // guildId: interaction.guildId,
+            // channelId: interaction.channelId,
+            name: interaction.user.username,
+            discordId: interaction.user.id,
+            username: interaction.user.username,
+            type: 'user'
+
+        }
+        try {
+            await userService.cadastrar(data);
+        } catch (error) {
+            console.log(error);
+        }
+        await interaction.reply(`\n**"${interaction.options.getString('perola')}"** \n\t\t\t-REIS, Gabriel-`);
+    }
 }
