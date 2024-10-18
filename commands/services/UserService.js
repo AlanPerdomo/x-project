@@ -1,10 +1,11 @@
 const axios = require('axios');
+const { apiUrl } = require('../../config.json');
 
 
 class UserService {
     async cadastrar(data){
         return axios({
-            url: 'http://localhost:3000/user/cadastrar',
+            url: `${apiUrl}/user/cadastrar`,
             method: 'post',
             data: data,
             timeout: 5000,
