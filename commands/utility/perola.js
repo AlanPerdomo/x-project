@@ -1,5 +1,5 @@
 const {SlashCommandBuilder, Options} = require('discord.js');
-const { userService } = require('../services/UserService');
+const { perolaService } = require('../services/PerolaService');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -12,10 +12,14 @@ module.exports = {
         ),
     async execute(interaction) {
         let data = {
-            
+            perola : interaction.options.getString('perola'),
+            userId : interaction.user.id,
+            guildId : interaction.guildId,
+            channelId : interaction.channelId,
+            date : interaction.createdTimestamp
         }
         try {
-            await userService.cadastrar(data);
+            await perolaService.cadastrar(data);
             console.log('Cadastrado com sucesso!');
         } catch (error) {
             console.log(error);
