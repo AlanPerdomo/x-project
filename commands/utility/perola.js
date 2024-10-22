@@ -16,14 +16,16 @@ module.exports = {
             userId : interaction.user.id,
             guildId : interaction.guildId,
             channelId : interaction.channelId,
-            date : interaction.createdTimestamp
+            date : interaction.createdTimestamp,
+            username: interaction.user.username,
+            name: interaction.user.globalName   
         }
         try {
             await perolaService.cadastrar(data);
-            console.log('Cadastrado com sucesso!');
+            await interaction.reply(`\n**"${interaction.options.getString('perola')}"** \n\t\t\t-REIS, Gabriel-`);
         } catch (error) {
             console.log(error);
+            await interaction.reply('Algo deu errado!');
         }
-        await interaction.reply(`\n**"${interaction.options.getString('perola')}"** \n\t\t\t-REIS, Gabriel-`);
     }
 }
