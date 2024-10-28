@@ -1,5 +1,5 @@
 const {SlashCommandBuilder, Options} = require('discord.js');
-const { perolaService } = require('../services/PerolaService');
+const { perolaService } = require('../../services/PerolaService');
 
 module.exports = {
     data: new SlashCommandBuilder()

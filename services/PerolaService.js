@@ -1,11 +1,10 @@
 const axios = require('axios');
-const { apiUrl } = require('../../config.json');
+const { apiUrl } = require('../config.json');
 
-
-class UserService {
+class PerolaService {
     async cadastrar(data){
         return axios({
-            url: `${apiUrl}/user/cadastrar`,
+            url: `${apiUrl}/perolas/cadastrar`,
             method: 'post',
             data: data,
             timeout: 5000,
@@ -19,6 +18,5 @@ class UserService {
     }
 }
 
-const userService = new UserService();
-
-module.exports = { userService }
+const perolaService = new PerolaService();
+module.exports = { perolaService }
