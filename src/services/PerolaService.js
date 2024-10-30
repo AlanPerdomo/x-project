@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { apiUrl } = require('../config.json');
+const { apiUrl } = require('../../config.json');
 
 class PerolaService {
     async cadastrar(data){
