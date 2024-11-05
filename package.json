@@ -55,5 +55,8 @@
 		"rimraf": "^3.0.2",
 		"typescript": "^5.6.3",
 		"typescript-eslint": "^8.12.2"
+	},
+	"resolutions": {
+		"discord-api-types": "0.37.100"
 	}
 }

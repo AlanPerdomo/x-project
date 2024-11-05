@@ -1,6 +1,6 @@
 import { Events } from 'discord.js';
-import { connectToChannel } from '../services/VoiceService';
-import { createAudioPlayer, NoSubscriberBehavior } from '@discordjs/voice';
+// import { connectToChannel } from '../services/VoiceService';
+import { createAudioPlayer, NoSubscriberBehavior, joinVoiceChannel, createAudioResource } from '@discordjs/voice';
 
 const { maxTransmissionGap } = require('../../config.json') as {
 	maxTransmissionGap: number;
@@ -27,11 +27,21 @@ module.exports = {
 		member: { voice: { channel: any } };
 		reply: (arg0: string) => any;
 	}) {
+		const voiceChannel = message.member.voice.channel;
 		if (message.content === '-join' && message.guild) {
 			const channel = message.member?.voice.channel;
 			if (channel) {
 				try {
-					const connection = await connectToChannel(channel);
+					const connection = joinVoiceChannel({
+						channelId: voiceChannel.id,
+						guildId: voiceChannel.guild.id,
+						adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+					});
+					// const connection = await connectToChannel(channel);
+					const filePath = path.join(__dirname, 'SoundHelix-Song-1.mp3');
+					const resource = createAudioResource(filePath);
+
+					player.play(resource);
 					connection.subscribe(player);
 					await message.reply('Playing audio in voice channel');
 				} catch (error) {

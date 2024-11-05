@@ -1,5 +1,5 @@
-import type { Readable } from 'node:stream';
-import prism from 'prism-media';
+// import type { Readable } from 'node:stream';
+// import prism from 'prism-media';
 import { DiscordGatewayAdapterCreator, DiscordGatewayAdapterLibraryMethods } from '@discordjs/voice';
 import {
 	GatewayDispatchEvents,
@@ -17,11 +17,16 @@ import {
 	NoSubscriberBehavior,
 } from '@discordjs/voice';
 import { Snowflake, Client, type VoiceBasedChannel, Events, Status } from 'discord.js';
-const { device, maxTransmissionGap, type } = require('../../config.json') as {
+const {
+	// device,
+	maxTransmissionGap,
+	//   type
+} = require('../../config.json') as {
 	device: string;
 	maxTransmissionGap: number;
 	type: string;
 };
+const path = require('node:path');
 
 const adapters = new Map<Snowflake, DiscordGatewayAdapterLibraryMethods>();
 const trackedClients = new Set<Client>();
@@ -35,33 +40,8 @@ const player = createAudioPlayer({
 });
 
 function attachRecorder() {
-	player.play(
-		createAudioResource(
-			new prism.FFmpeg({
-				args: [
-					'-analyzeduration',
-					'0',
-					'-loglevel',
-					'0',
-					'-f',
-					type,
-					'-i',
-					type === 'dshow' ? `audio=${device}` : device,
-					'-acodec',
-					'libopus',
-					'-f',
-					'opus',
-					'-ar',
-					'48000',
-					'-ac',
-					'2',
-				],
-			}) as Readable,
-			{
-				inputType: StreamType.OggOpus,
-			},
-		),
-	);
+	const filepath = path.join(__dirname, 'SoundHelix-Song-1.mp3');
+	player.play(createAudioResource(filepath));
 	console.log('Attached recorder - ready to go!');
 }
 
@@ -70,7 +50,6 @@ player.on('stateChange', (oldState, newState) => {
 		console.log('Playing audio output on audio player');
 	} else if (newState.status === AudioPlayerStatus.Idle) {
 		console.log('Playback has stopped. Attempting to restart.');
-		attachRecorder();
 	}
 });
 
@@ -82,6 +61,7 @@ export async function connectToChannel(channel: VoiceBasedChannel) {
 	const connection = joinVoiceChannel({
 		channelId: channel.id,
 		guildId: channel.guild.id,
+		// @ts-ignore
 		adapterCreator: channel.guild.voiceAdapterCreator,
 	});
 	try {
