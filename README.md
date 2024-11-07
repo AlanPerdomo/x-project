@@ -4,7 +4,7 @@ Bem-vindo ao repositório do **X Project**, um bot para Discord desenvolvido com
 
 ## Funcionalidades Atuais
 
-- **Comandos de Chat**: 
+- **Comandos de Chat**:
   - Suporte a diversos comandos interativos, que podem ser executados diretamente no chat do Discord.
   - Funcionalidades específicas de gerenciamento de servidor e interação com os usuários.
 - **Sistema de Eventos**:
@@ -16,48 +16,56 @@ Bem-vindo ao repositório do **X Project**, um bot para Discord desenvolvido com
 
 - **Node.js** v18 ou superior
 - **npm** v7 ou superior
-- FFmpeg instalado e configurado no sistema
 - Conta e servidor no Discord com permissão para adicionar bots
 - Token de bot do Discord
+- \*FFmpeg instalado e configurado no sistema
+
+###### \* Somente necessario para a funcionalidade de voice. desativada
 
 ## Instalação
 
 1. Clone o repositório:
 
-    ```bash
-    git clone https://github.com/seu-usuario/x-project.git
-    cd x-project
-    ```
+   ```bash
+   git clone https://github.com/AlanPerdomo/x-project.git
+   cd x-project
+   ```
 
 2. Instale as dependências:
 
-    ```bash
-    npm install
-    ```
+   ```bash
+   npm install
+   ```
 
 3. Configure o arquivo `config.json` com as credenciais necessárias e configurações de áudio (exemplo):
 
-    ```json
-    {
-      "token": "SEU_TOKEN_DISCORD",
-      "device": "default", // Defina o dispositivo de áudio para a captura de voz
-      "maxTransmissionGap": 2000,
-      "type": "alsa" // Dependendo do sistema, ajuste para dshow (Windows), alsa (Linux), etc.
-    }
-    ```
+   ```json
+   {
+   	"token": "SEU_TOKEN_DISCORD",
+   	"device": "default", // Defina o dispositivo de áudio para a captura de voz
+   	"maxTransmissionGap": 2000,
+   	"type": "alsa" // Dependendo do sistema, ajuste para dshow (Windows), alsa (Linux), etc.
+   }
+   ```
 
 4. Inicie o bot:
 
-    ```bash
-    npm run start
-    ```
+   ```bash
+   npm run start
+   ```
+
+5. (opcional) Inicie o bot em modo watch:
+
+   ```bash
+   npm run start:dev
+   ```
 
 ## Comandos Disponíveis
 
 No momento, os seguintes comandos estão disponíveis:
 
-- `/ping`: Retorna "Pong!" para verificar a conexão com o servidor.
-- `/help`: Lista todos os comandos disponíveis e suas descrições.
+- `/perola`: registra a perola enviada no banco de dados.
+- `/novo-usuario`: Registra um email e libera uma senha para o usuário.
 - Outros comandos (em desenvolvimento).
 
 Para visualizar todos os comandos, digite `/help` no canal onde o bot está presente.
@@ -72,15 +80,15 @@ Este é um projeto em desenvolvimento e contribuições são bem-vindas! Se voc�
 
 1. Faça um fork do repositório.
 2. Crie um branch para sua feature/fix:
-    ```bash
-    git checkout -b minha-feature
-    ```
+   ```bash
+   git checkout -b minha-feature
+   ```
 3. Envie suas alterações:
-    ```bash
-    git add .
-    git commit -m "Descrição das alterações"
-    git push origin minha-feature
-    ```
+   ```bash
+   git add .
+   git commit -m "Descrição das alterações"
+   git push origin minha-feature
+   ```
 4. Abra um Pull Request no repositório original.
 
 ## Licença
