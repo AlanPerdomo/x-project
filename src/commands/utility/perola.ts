@@ -4,7 +4,7 @@ const { perolaService } = require('../../services/PerolaService');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('perola')
-		.setDescription('🍓Salva a Perola🍓')
+		.setDescription('🍓Registra a Perola🍓')
 		.addStringOption(option => option.setName('perola').setDescription('Manda a Braba').setRequired(true)),
 	async execute(interaction: {
 		options: { getString: (arg0: string) => any };

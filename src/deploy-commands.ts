@@ -36,10 +36,10 @@ async function deployCommands() {
 
 	const rest = new REST().setToken(token);
 
-	rest
-		.put(Routes.applicationCommands(clientId), { body: [] })
-		.then(() => console.log('Successfully deleted all application commands.'))
-		.catch(console.error);
+	// rest
+	// 	.put(Routes.applicationCommands(clientId), { body: [] })
+	// 	.then(() => console.log('Successfully deleted all application commands.'))
+	// 	.catch(console.error);
 
 	(async () => {
 		try {
