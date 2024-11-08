@@ -8,7 +8,7 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
 });
 
-deployCommands();
+// deployCommands();
 
 client.commands = new Collection();
 const foldersPath = path.join(__dirname, 'commands');

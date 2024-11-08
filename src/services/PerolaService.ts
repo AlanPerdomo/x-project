@@ -3,7 +3,7 @@ const { apiUrl } = require('../../config.json');
 
 class PerolaService {
   async cadastrar(data: any) {
-    return axios({
+    return await axios({
       url: `${apiUrl}/perolas/cadastrar`,
       method: 'post',
       data: data,
@@ -19,7 +19,7 @@ class PerolaService {
   }
 
   async sorte() {
-    return axios({
+    return await axios({
       url: `${apiUrl}/perolas/sorte`,
       method: 'get',
       timeout: 5000,

@@ -48,9 +48,9 @@ async function deployCommands() {
   const rest = new REST().setToken(token);
 
   try {
-    console.log('Deleting all existing application commands...');
-    await rest.put(Routes.applicationCommands(clientId), { body: [] });
-    console.log('Successfully deleted all application commands.');
+    // console.log('Deleting all existing application commands...');
+    // await rest.put(Routes.applicationCommands(clientId), { body: [] });
+    // console.log('Successfully deleted all application commands.');
 
     console.log(`Started refreshing ${commands.length} application (/) commands.`);
     const data = (await rest.put(Routes.applicationCommands(clientId), { body: commands })) as any[];

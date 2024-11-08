@@ -7,7 +7,7 @@ module.exports = {
 
   async execute(interaction: { reply: (arg0: { files: any; ephemeral: boolean; content: string }) => any }) {
     const perola = await perolaService.sorte();
-    const canvas = Canvas.createCanvas(700, 250);
+    const canvas = Canvas.createCanvas(200, 200);
     const context = canvas.getContext('2d');
     const background = await Canvas.loadImage('src/assets/private_assets/gabriel.jpg');
 
@@ -18,7 +18,7 @@ module.exports = {
     interaction.reply({
       content: `\n**"${perola.perola}"** \n\t\t\t-REIS, Gabriel-\n`,
       files: [attachment],
-      ephemeral: true,
+      ephemeral: false,
     });
   },
 };
