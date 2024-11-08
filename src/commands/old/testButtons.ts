@@ -1,7 +1,7 @@
 import { ButtonBuilder, ButtonStyle, SlashCommandBuilder, ActionRowBuilder, AnyComponentBuilder } from 'discord.js';
 
 module.exports = {
-	data: new SlashCommandBuilder().setName('test').setDescription('test Buttons'),
+	data: new SlashCommandBuilder().setName('test-buttons').setDescription('test Buttons'),
 
 	async execute(interaction: {
 		options: { getUser: (arg0: string) => any; getString: (arg0: string) => string };

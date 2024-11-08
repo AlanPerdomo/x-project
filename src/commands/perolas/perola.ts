@@ -22,6 +22,7 @@ module.exports = {
 			date: interaction.createdTimestamp,
 			username: interaction.user.username,
 			name: interaction.user.globalName,
+			createdAt: new Date(),
 		};
 		try {
 			await perolaService.cadastrar(data);
