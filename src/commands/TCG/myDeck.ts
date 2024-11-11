@@ -13,10 +13,9 @@ module.exports = {
       const deckDisplay = deck
         .map((card: { card: { nome: any; atk: any; def: any; hp: any; special_ability: any }; quantity: any }) => {
           return (
-            console.log(card),
             `**${card.card.nome}** - Quantidade: ${card.quantity}\n` +
-              `ATK: ${card.card.atk} | DEF: ${card.card.def} | HP: ${card.card.hp}\n` +
-              `Habilidade: ${card.card.special_ability}\n`
+            `ATK: ${card.card.atk} | DEF: ${card.card.def} | HP: ${card.card.hp}\n` +
+            `Habilidade: ${card.card.special_ability}\n`
           );
         })
         .join('\n');

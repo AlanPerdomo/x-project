@@ -34,6 +34,23 @@ class TcgService {
         return Promise.reject(error);
       });
   }
+
+  async addCardToDeck(userId: string) {
+    const token = (await getUserToken(userId)).access_token;
+
+    return await axios({
+      url: `${apiUrl}/tcg/decks/add-card`,
+      method: 'put',
+      timeout: 5000,
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    })
+      .then(response => {
+        return Promise.resolve(response.data.result);
+      })
+      .catch(error => {
+        return Promise.reject(error);
+      });
+  }
 }
 
 async function getUserToken(userId: string) {
