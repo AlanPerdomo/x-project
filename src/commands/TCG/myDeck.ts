@@ -6,26 +6,21 @@ module.exports = {
 
   async execute(interaction: { user: { id: string }; reply: (arg0: string) => any }) {
     const deck = await tcgService.buscarDeck(interaction.user.id);
-    console.log(await tcgService.buscarDeck(interaction.user.id));
 
-    // Verifica se o usuário tem um deck
     if (!deck || deck.length === 0) {
       return interaction.reply('Você ainda não tem um deck.');
     } else {
-      console.log(`\nBuscando deck de ${interaction.user.id}\n`);
-
-      // Formata a resposta para exibir cada carta do deck
       const deckDisplay = deck
-        .map((card: { name: any; quantity: any; atk: any; def: any; hp: any; description: any }) => {
+        .map((card: { card: { nome: any; atk: any; def: any; hp: any; special_ability: any }; quantity: any }) => {
           return (
-            `**${card.name}** - Quantidade: ${card.quantity}\n` +
-            `ATK: ${card.atk} | DEF: ${card.def} | HP: ${card.hp}\n` +
-            `Habilidade: ${card.description}\n`
+            console.log(card),
+            `**${card.card.nome}** - Quantidade: ${card.quantity}\n` +
+              `ATK: ${card.card.atk} | DEF: ${card.card.def} | HP: ${card.card.hp}\n` +
+              `Habilidade: ${card.card.special_ability}\n`
           );
         })
         .join('\n');
 
-      // Envia a mensagem formatada
       return interaction.reply(`**Seu Deck:**\n\n${deckDisplay}`);
     }
   },
