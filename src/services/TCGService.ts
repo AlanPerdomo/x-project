@@ -3,26 +3,42 @@ import axios from 'axios';
 const { apiUrl, botServiceToken } = require('../../config.json');
 
 class TcgService {
-  async buscarDeck(data: any) {
-    data = data + botServiceToken;
-    try {
-      return await axios({
-        url: `${apiUrl}/token/mytoken`,
-        method: 'post',
-        data: data.toJSON(),
-        timeout: 5000,
-        headers: { Accept: 'application/json' },
+  async buscarDeck(userId: string) {
+    console.log(`\nbuscando deck de ${userId}\n`);
+    const token = (await getUserToken(userId)).access_token;
+
+    return await axios({
+      url: `${apiUrl}/tcg/decks/my-deck`,
+      method: 'get',
+      timeout: 5000,
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    })
+      .then(response => {
+        return Promise.resolve(response.data.result);
       })
-        .then(response => {
-          return Promise.resolve(response.data);
-        })
-        .catch(error => {
-          return Promise.reject(error);
-        });
-    } catch (error) {
-      return Promise.reject(error);
-    }
+      .catch(error => {
+        return Promise.reject(error);
+      });
   }
+}
+
+async function getUserToken(userId: string) {
+  return await axios({
+    url: `${apiUrl}/token/get-user-token`,
+    method: 'post',
+    timeout: 5000,
+    headers: { Accept: 'application/json' },
+    data: {
+      hash: botServiceToken,
+      discordId: userId,
+    },
+  })
+    .then(response => {
+      return response.data;
+    })
+    .catch(error => {
+      return error;
+    });
 }
 
 export const tcgService = new TcgService();
