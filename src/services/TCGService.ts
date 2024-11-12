@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const { apiUrl, botServiceToken } = require('../../config.json');
+import { apiUrl, botServiceToken } from '../../config.json';
 
 class TcgService {
   async buscarDeck(userId: string) {
