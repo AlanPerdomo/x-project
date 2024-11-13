@@ -50,6 +50,34 @@ class TcgService {
         return Promise.reject(error);
       });
   }
+  async createCard(
+    userId: string,
+    data: {
+      nome: string;
+      tipo: string;
+      atk: number;
+      def: number;
+      hp: number;
+      rarity: number;
+      special_ability: string;
+    },
+  ) {
+    const token = (await getUserToken(userId)).access_token;
+
+    return await axios({
+      url: `${apiUrl}/tcg/cards/create-card`,
+      method: 'post',
+      timeout: 5000,
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+      data: data,
+    })
+      .then(response => {
+        return Promise.resolve(response.data.result);
+      })
+      .catch(error => {
+        return Promise.reject(error);
+      });
+  }
 }
 
 async function getUserToken(userId: string) {

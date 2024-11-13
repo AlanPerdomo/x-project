@@ -3,6 +3,7 @@ import { perolaService } from '../../services/PerolaService';
 const Canvas = require('@napi-rs/canvas');
 
 module.exports = {
+  cooldowns: 3600 * 24,
   data: new SlashCommandBuilder().setName('perola-do-dia').setDescription('retorna uma perola aleatoria'),
 
   async execute(interaction: { reply: (arg0: { files: any; ephemeral: boolean; content: string }) => any }) {
