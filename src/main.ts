@@ -3,12 +3,14 @@ const path = require('node:path');
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
 const { token } = require('../config.json');
 const { deployCommands } = require('./deploy-commands');
+const { generateDependencyReport } = require('@discordjs/voice');
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
 });
 
 // deployCommands();
+// console.log(generateDependencyReport());
 
 client.cooldowns = new Collection();
 client.commands = new Collection();
