@@ -5,14 +5,14 @@ import { token, clientId } from '../config.json';
 
 interface Command {
   data: {
-    toJSON(): { name: string }; // Ajuste para um objeto que tenha 'name' como string
+    toJSON(): { name: string };
     name: string;
   };
   execute: (...args: any[]) => void;
 }
 
 async function deployCommands() {
-  const commands: { name: string }[] = []; // Definir comandos para aceitar objetos com propriedade `name`
+  const commands: { name: string }[] = [];
 
   const foldersPath = path.join(__dirname, 'commands');
   const commandFolders = fs.readdirSync(foldersPath);
@@ -48,9 +48,9 @@ async function deployCommands() {
   const rest = new REST().setToken(token);
 
   try {
-    // console.log('Deleting all existing application commands...');
-    // await rest.put(Routes.applicationCommands(clientId), { body: [] });
-    // console.log('Successfully deleted all application commands.');
+    console.log('Deleting all existing application commands...');
+    await rest.put(Routes.applicationCommands(clientId), { body: [] });
+    console.log('Successfully deleted all application commands.');
 
     console.log(`Started refreshing ${commands.length} application (/) commands.`);
     const data = (await rest.put(Routes.applicationCommands(clientId), { body: commands })) as any[];
