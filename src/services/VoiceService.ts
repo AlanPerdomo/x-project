@@ -3,12 +3,14 @@ import {
   createAudioResource,
   joinVoiceChannel,
   NoSubscriberBehavior,
-  AudioPlayerStatus,
   VoiceConnectionStatus,
 } from '@discordjs/voice';
 
 class VoiceService {
-  async joinVoice(interaction) {
+  async joinVoice(interaction: {
+    member: { voice: { channelId: any } };
+    guild: { id: any; voiceAdapterCreator: any };
+  }) {
     const voiceConnection = joinVoiceChannel({
       channelId: interaction.member.voice.channelId,
       guildId: interaction.guild.id,
@@ -30,7 +32,12 @@ class VoiceService {
       resource.volume.setVolume(0.8);
     }
 
+    voiceConnection.subscribe(player);
+
     player.play(resource);
+
+    let date = new Date();
+
     voiceConnection.on(VoiceConnectionStatus.Ready, () => {
       console.log('Voice ready');
     });
@@ -39,28 +46,8 @@ class VoiceService {
       console.error(`Player error: ${error.message}`);
     });
 
-    player.on(AudioPlayerStatus.Idle, () => {
-      console.log('Idle ' + new Date());
-    });
-
-    player.on(AudioPlayerStatus.Buffering, () => {
-      console.log('Buffering ' + new Date());
-    });
-
-    player.on(AudioPlayerStatus.Playing, () => {
-      console.log('Playing ' + new Date());
-    });
-
-    player.on(AudioPlayerStatus.AutoPaused, () => {
-      console.log('AutoPaused ' + new Date());
-    });
-
-    player.on(AudioPlayerStatus.Paused, () => {
-      console.log('Paused ' + new Date());
-    });
-
-    voiceConnection.on('stateChange', (oldState, newState) => {
-      console.log(`Connection transitioned from ${oldState.status} to ${newState.status}`);
+    player.on('stateChange', (oldState, newState) => {
+      console.log(`\nPlayer transitioned from ${oldState.status} to ${newState.status} \n\t${date}\n`);
     });
   }
 }
