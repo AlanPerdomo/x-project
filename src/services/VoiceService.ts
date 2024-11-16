@@ -7,10 +7,7 @@ import {
 } from '@discordjs/voice';
 
 class VoiceService {
-  async joinVoice(interaction: {
-    member: { voice: { channelId: any } };
-    guild: { id: any; voiceAdapterCreator: any };
-  }) {
+  async joinVoice(interaction: { reply?: any; editReply?: any; member: any; guild: any }) {
     const voiceConnection = joinVoiceChannel({
       channelId: interaction.member.voice.channelId,
       guildId: interaction.guild.id,
@@ -29,7 +26,7 @@ class VoiceService {
       inlineVolume: true,
     });
     if (resource.volume) {
-      resource.volume.setVolume(0.8);
+      resource.volume.setVolume(0.5);
     }
 
     voiceConnection.subscribe(player);
