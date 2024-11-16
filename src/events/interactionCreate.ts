@@ -13,37 +13,31 @@ module.exports = {
     }
 
     // cooldown system
-    if (command.data.name) {
-      try {
-        const now = Date.now();
-        const timestamps = cooldowns.get(command.data.name);
-        const defaultCooldownDuration = 1;
-        const cooldownAmount = (command.cooldowns ?? defaultCooldownDuration) * 1000;
-
-        if (timestamps.has(interaction.user.id)) {
-          const expirationTime = timestamps.get(interaction.user.id) + cooldownAmount;
-
-          if (now < expirationTime) {
-            const expiredTimestamp = Math.round(expirationTime / 1_000);
-            await interaction.reply({
-              content: `Please wait, you are on a cooldown for \`${command.data.name}\`. You can use it again <t:${expiredTimestamp}:R>.`,
-              ephemeral: true,
-            });
-            await wait(cooldownAmount - 1);
-          }
-          await interaction.editReply({ content: `You can use \`${command.data.name}\` again!`, ephemeral: true });
-          await wait(3000);
-          return interaction.deleteReply();
-        }
-
-        timestamps.set(interaction.user.id, now);
-        setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
     if (interaction.isChatInputCommand()) {
+      const now = Date.now();
+      const timestamps = cooldowns.get(command.data.name);
+      const defaultCooldownDuration = 1;
+      const cooldownAmount = (command.cooldowns ?? defaultCooldownDuration) * 1000;
+
+      if (timestamps.has(interaction.user.id)) {
+        const expirationTime = timestamps.get(interaction.user.id) + cooldownAmount;
+
+        if (now < expirationTime) {
+          const expiredTimestamp = Math.round(expirationTime / 1_000);
+          await interaction.reply({
+            content: `Please wait, you are on a cooldown for \`${command.data.name}\`. You can use it again <t:${expiredTimestamp}:R>.`,
+            ephemeral: true,
+          });
+          await wait(cooldownAmount - 1);
+        }
+        await interaction.editReply({ content: `You can use \`${command.data.name}\` again!`, ephemeral: true });
+        await wait(3000);
+        return interaction.deleteReply();
+      }
+
+      timestamps.set(interaction.user.id, now);
+      setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
+
       if (!command) {
         console.error(`No command matching ${interaction.commandName} was found.`);
         return;
@@ -59,7 +53,11 @@ module.exports = {
         }
       }
     } else if (interaction.isButton()) {
-      console.log('Button');
+      const message = await interaction.message.fetch();
+      console.log(message);
+      await interaction.deleteReply(message);
+      //
+      console.log(interaction.customId);
     } else if (interaction.isStringSelectMenu()) {
       console.log('StringSelectMenu');
     }

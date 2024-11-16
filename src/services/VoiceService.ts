@@ -7,7 +7,7 @@ import {
 } from '@discordjs/voice';
 
 class VoiceService {
-  async joinVoice(interaction: { reply?: any; editReply?: any; member: any; guild: any }) {
+  async joinVoice(interaction) {
     const voiceConnection = joinVoiceChannel({
       channelId: interaction.member.voice.channelId,
       guildId: interaction.guild.id,
@@ -22,7 +22,27 @@ class VoiceService {
         maxMissedFrames: Math.round(5000 / 20),
       },
     });
-    let resource = createAudioResource('src/assets/767624__looplicator__short-track-1300-industraumatic.mp3', {
+
+    const audios = [
+      'src/assets/ai denuncia gekko maxista.m4a',
+      'src/assets/é tudo culpa minha.m4a',
+      'src/assets/espero que o abib não tenha gravado isso.m4a',
+      'src/assets/foi o audio.m4a',
+      'src/assets/se contenta com essa sua vida de merda.m4a',
+      'src/assets/um verme como esse vem falar comigo.m4a',
+      'src/assets/VAI PRO INFERNO.m4a',
+      'src/assets/vai pro show da xuxa.m4a',
+      'src/assets/vou te falar nada.m4a',
+    ];
+
+    console.log(audios.length);
+
+    const random = Math.floor(Math.random() * audios.length - 1);
+    console.log(random);
+    const audio = audios[random];
+    console.log(audio);
+
+    let resource = createAudioResource(`${audio}`, {
       inlineVolume: true,
     });
     if (resource.volume) {
