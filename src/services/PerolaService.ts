@@ -1,5 +1,6 @@
 import axios from 'axios';
-const { apiUrl } = require('../../config.json');
+import { apiUrl } from '../../config.json';
+import fs from 'fs';
 
 class PerolaService {
   async cadastrar(data: any) {
@@ -31,6 +32,15 @@ class PerolaService {
       .catch(error => {
         return Promise.reject(error);
       });
+  }
+
+  async PerolaImageUrl() {
+    const filePath = 'src/assets/private_assets/gabriel.txt';
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const strings = content.split(',');
+    const randomIndex = Math.floor(Math.random() * strings.length);
+    const randomString = strings[randomIndex];
+    return randomString;
   }
 }
 

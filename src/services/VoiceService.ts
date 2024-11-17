@@ -1,17 +1,64 @@
 import {
   createAudioPlayer,
-  createAudioResource,
+  DiscordGatewayAdapterCreator,
+  DiscordGatewayAdapterLibraryMethods,
   joinVoiceChannel,
   NoSubscriberBehavior,
-  VoiceConnectionStatus,
 } from '@discordjs/voice';
+import {
+  Snowflake,
+  Client,
+  GatewayDispatchEvents,
+  GatewayVoiceServerUpdateDispatchData,
+  GatewayVoiceStateUpdateDispatchData,
+  Guild,
+  VoiceBasedChannel,
+  Events,
+  Status,
+} from 'discord.js';
 
+const adapters = new Map<Snowflake, DiscordGatewayAdapterLibraryMethods>();
+const trackedClients = new Set<Client>();
+const trackedShards = new Map<number, Set<Snowflake>>();
 class VoiceService {
-  async joinVoice(interaction) {
+  async trackClient(client: Client) {
+    if (trackedClients.has(client)) return;
+    trackedClients.add(client);
+    client.ws.on(GatewayDispatchEvents.VoiceServerUpdate, (payload: GatewayVoiceServerUpdateDispatchData) => {
+      adapters.get(payload.guild_id)?.onVoiceServerUpdate(payload);
+    });
+    client.ws.on(GatewayDispatchEvents.VoiceStateUpdate, (payload: GatewayVoiceStateUpdateDispatchData) => {
+      if (payload.guild_id && payload.session_id && payload.user_id === client.user?.id) {
+        // @ts-expect-error TODO: currently voice is using a different discord-api-types version than discord.js
+        adapters.get(payload.guild_id)?.onVoiceStateUpdate(payload);
+      }
+    });
+    client.on(Events.ShardDisconnect, (_, shardId) => {
+      const guilds = trackedShards.get(shardId);
+      if (guilds) {
+        for (const guildID of guilds.values()) {
+          adapters.get(guildID)?.destroy();
+        }
+      }
+      trackedShards.delete(shardId);
+    });
+  }
+
+  async trackGuild(guild: Guild) {
+    let guilds = trackedShards.get(guild.shardId);
+    if (!guilds) {
+      guilds = new Set();
+      trackedShards.set(guild.shardId, guilds);
+    }
+    guilds.add(guild.id);
+  }
+
+  async connect(interaction, resource) {
+    const channel = interaction.member.voice.channel;
     const voiceConnection = joinVoiceChannel({
       channelId: interaction.member.voice.channelId,
       guildId: interaction.guild.id,
-      adapterCreator: interaction.guild.voiceAdapterCreator,
+      adapterCreator: await this.createDiscordJSAdapter(channel),
       selfDeaf: false,
       selfMute: false,
     });
@@ -23,51 +70,31 @@ class VoiceService {
       },
     });
 
-    const audios = [
-      'src/assets/ai denuncia gekko maxista.m4a',
-      'src/assets/é tudo culpa minha.m4a',
-      'src/assets/espero que o abib não tenha gravado isso.m4a',
-      'src/assets/foi o audio.m4a',
-      'src/assets/se contenta com essa sua vida de merda.m4a',
-      'src/assets/um verme como esse vem falar comigo.m4a',
-      'src/assets/VAI PRO INFERNO.m4a',
-      'src/assets/vai pro show da xuxa.m4a',
-      'src/assets/vou te falar nada.m4a',
-    ];
-
-    console.log(audios.length);
-
-    const random = Math.floor(Math.random() * audios.length - 1);
-    console.log(random);
-    const audio = audios[random];
-    console.log(audio);
-
-    let resource = createAudioResource(`${audio}`, {
-      inlineVolume: true,
-    });
-    if (resource.volume) {
-      resource.volume.setVolume(0.5);
-    }
-
     voiceConnection.subscribe(player);
-
     player.play(resource);
-
-    let date = new Date();
-
-    voiceConnection.on(VoiceConnectionStatus.Ready, () => {
-      console.log('Voice ready');
-    });
-
-    player.on('error', error => {
-      console.error(`Player error: ${error.message}`);
-    });
-
-    player.on('stateChange', (oldState, newState) => {
-      console.log(`\nPlayer transitioned from ${oldState.status} to ${newState.status} \n\t${date}\n`);
-    });
   }
-}
 
+  async createDiscordJSAdapter(channel: VoiceBasedChannel): Promise<DiscordGatewayAdapterCreator> {
+    return methods => {
+      adapters.set(channel.guild.id, methods);
+      this.trackClient(channel.client);
+      this.trackGuild(channel.guild);
+      return {
+        sendPayload(data) {
+          if (channel.guild.shard.status === Status.Ready) {
+            channel.guild.shard.send(data);
+            return true;
+          }
+          return false;
+        },
+        destroy() {
+          return adapters.delete(channel.guild.id);
+        },
+      };
+    };
+  }
+
+  async disconnect() {}
+}
 const voiceService = new VoiceService();
 export { voiceService };

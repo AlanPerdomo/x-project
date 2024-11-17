@@ -6,18 +6,23 @@ module.exports = {
   cooldowns: 3600 * 24,
   data: new SlashCommandBuilder().setName('perola-do-dia').setDescription('retorna uma perola aleatoria'),
 
-  async execute(interaction: { reply: (arg0: { files: any; ephemeral: boolean; content: string }) => any }) {
+  async execute(interaction: { reply: (arg0: { files: AttachmentBuilder[]; ephemeral: boolean }) => void }) {
     const perola = await perolaService.sorte();
-    const canvas = Canvas.createCanvas(200, 200);
+    const canvas = Canvas.createCanvas(800, 600);
     const context = canvas.getContext('2d');
-    const background = await Canvas.loadImage('src/assets/private_assets/gabriel.jpg');
 
+    const background = await Canvas.loadImage(await perolaService.PerolaImageUrl());
     context.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-    const attachment = new AttachmentBuilder(await canvas.encode('png'), { name: 'profile-image.png' });
+    context.fillStyle = 'rgba(0, 0, 0, 0.5)'; // Cor de fundo semitransparente
+    context.fillRect(0, canvas.height - 50, canvas.width, 50); // Posição e tamanho do fundo sombreado
+    context.font = '30px sans-serif';
+    context.fillStyle = '#ffffff'; // Cor do texto
+    context.fillText(perola.perola, 20, canvas.height - 15); // Posição do texto
+
+    const attachment = new AttachmentBuilder(await canvas.encode('png'), { name: 'image.png' });
 
     interaction.reply({
-      content: `\n**"${perola.perola}"** \n\t\t\t-REIS, Gabriel-\n`,
       files: [attachment],
       ephemeral: false,
     });
