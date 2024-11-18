@@ -4,7 +4,21 @@ const wait = require('node:timers/promises').setTimeout;
 
 module.exports = {
   name: Events.InteractionCreate,
-  async execute(interaction) {
+  async execute(interaction: {
+    client: { commands?: any; cooldowns?: any };
+    commandName: any;
+    isChatInputCommand: () => any;
+    user: { id: any };
+    reply: (arg0: { content: string; ephemeral: boolean }) => any;
+    editReply: (arg0: { content: string; ephemeral: boolean }) => any;
+    deleteReply: () => any;
+    replied: any;
+    deferred: any;
+    followUp: (arg0: { content: string; ephemeral: boolean }) => any;
+    isButton: () => any;
+    message: { fetch: () => any };
+    customId: any;
+  }) {
     const { cooldowns } = interaction.client;
     const command = interaction.client.commands.get(interaction.commandName);
 
@@ -12,11 +26,11 @@ module.exports = {
       cooldowns.set(interaction.commandName, new Collection());
     }
 
-    // cooldown system
     if (interaction.isChatInputCommand()) {
+      // cooldown system
       const now = Date.now();
       const timestamps = cooldowns.get(command.data.name);
-      const defaultCooldownDuration = 1;
+      const defaultCooldownDuration = 30;
       const cooldownAmount = (command.cooldowns ?? defaultCooldownDuration) * 1000;
 
       if (timestamps.has(interaction.user.id)) {
@@ -43,6 +57,7 @@ module.exports = {
         return;
       }
       try {
+        // console.log(command);
         await command.execute(interaction);
       } catch (error) {
         console.error(error);
@@ -52,14 +67,6 @@ module.exports = {
           await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
         }
       }
-    } else if (interaction.isButton()) {
-      const message = await interaction.message.fetch();
-      console.log(message);
-      await interaction.deleteReply(message);
-      //
-      console.log(interaction.customId);
-    } else if (interaction.isStringSelectMenu()) {
-      console.log('StringSelectMenu');
     }
   },
 };

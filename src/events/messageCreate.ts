@@ -6,6 +6,7 @@ module.exports = {
   name: Events.MessageCreate,
   once: false,
   async execute(message: {
+    webhookId: any;
     author: { id: any; username: any };
     content: any;
     guild: { name: any };
@@ -14,6 +15,7 @@ module.exports = {
     member: { voice: { channel: any } };
     reply: (arg0: string) => any;
   }) {
+    if (message.webhookId) return;
     let data = {
       userId: message.author.id,
       user: message.author.username,

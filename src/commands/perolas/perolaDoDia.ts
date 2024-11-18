@@ -14,11 +14,42 @@ module.exports = {
     const background = await Canvas.loadImage(await perolaService.PerolaImageUrl());
     context.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-    context.fillStyle = 'rgba(0, 0, 0, 0.5)'; // Cor de fundo semitransparente
-    context.fillRect(0, canvas.height - 50, canvas.width, 50); // Posição e tamanho do fundo sombreado
     context.font = '30px sans-serif';
-    context.fillStyle = '#ffffff'; // Cor do texto
-    context.fillText(perola.perola, 20, canvas.height - 15); // Posição do texto
+    context.fillStyle = '#ffffff';
+    const maxWidth = canvas.width - 40;
+    const lineHeight = 35;
+    const text = perola.perola;
+
+    function getWrappedText(ctx: { measureText: (arg0: string) => any }, text: string, maxWidth: number) {
+      const words = text.split(' ');
+      let line = '';
+      const lines = [];
+      for (const word of words) {
+        const testLine = line + word + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        if (testWidth > maxWidth && line !== '') {
+          lines.push(line);
+          line = word + ' ';
+        } else {
+          line = testLine;
+        }
+      }
+      lines.push(line);
+      return lines;
+    }
+
+    const lines = getWrappedText(context, text, maxWidth);
+    const shadowHeight = lines.length * lineHeight + 20;
+    const shadowY = canvas.height - shadowHeight;
+
+    context.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    context.fillRect(0, shadowY, canvas.width, shadowHeight);
+
+    context.fillStyle = '#ffffff';
+    lines.forEach((line, index) => {
+      context.fillText(line.trim(), 20, shadowY + 30 + index * lineHeight);
+    });
 
     const attachment = new AttachmentBuilder(await canvas.encode('png'), { name: 'image.png' });
 
