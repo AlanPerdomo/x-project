@@ -20,16 +20,16 @@ module.exports = {
     customId: any;
   }) {
     const { cooldowns } = interaction.client;
-    const command = interaction.client.commands.get(interaction.commandName);
 
     if (!cooldowns.has(interaction.commandName)) {
       cooldowns.set(interaction.commandName, new Collection());
     }
 
-    if (interaction.isChatInputCommand()) {
-      // cooldown system
+    async function timer(command: any) {
+      console.log(command.data.name);
       const now = Date.now();
       const timestamps = cooldowns.get(command.data.name);
+      console.log(timestamps);
       const defaultCooldownDuration = 30;
       const cooldownAmount = (command.cooldowns ?? defaultCooldownDuration) * 1000;
 
@@ -51,13 +51,35 @@ module.exports = {
 
       timestamps.set(interaction.user.id, now);
       setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
+    }
 
+    if (interaction.isChatInputCommand()) {
+      const command = interaction.client.commands.get(interaction.commandName);
+      await timer(command);
       if (!command) {
         console.error(`No command matching ${interaction.commandName} was found.`);
         return;
       }
       try {
         // console.log(command);
+        await command.execute(interaction);
+      } catch (error) {
+        console.error(error);
+        if (interaction.replied || interaction.deferred) {
+          await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+        } else {
+          await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+        }
+      }
+    } else if (interaction.isButton()) {
+      const command = interaction.client.commands.get(interaction.customId);
+      if (!command) {
+        console.error(`No command matching ${interaction.commandName} was found.`);
+        return;
+      }
+      try {
+        // console.log(command);
+        // await timer(command);
         await command.execute(interaction);
       } catch (error) {
         console.error(error);

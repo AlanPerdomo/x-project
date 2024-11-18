@@ -1,6 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder } from 'discord.js';
 
 module.exports = {
+  cooldowns: new Map(),
   data: new SlashCommandBuilder().setName('tcg').setDescription('Exibe informações sobre o TCG'),
 
   async execute(interaction) {
@@ -18,7 +19,7 @@ module.exports = {
 
     const site = new ButtonBuilder()
       .setLabel('Site')
-      .setURL('https://www.leagueoflegends.com/pt-br/')
+      .setURL('https://www.google.com')
       .setStyle(ButtonStyle.Link)
       .setEmoji('🌐')
       .setDisabled(true);
@@ -28,28 +29,20 @@ module.exports = {
     const response = await interaction.reply({
       content: 'Bem-vindo ao TCG!',
       components: [row],
-      ephemeral: true,
+      ephemeral: false,
     });
     const collectorFilter = i => i.user.id === interaction.user.id;
-    try {
-      const confirmation = await response.awaitMessageComponent({
-        filter: collectorFilter,
-        componentType: 'BUTTON',
-        time: 60000,
-      });
 
-      if (confirmation.customId === 'my-deck') {
-        console.log('my-deck');
-        await interaction.update({ content: `Seu deck: deck`, components: [] });
-      } else if (confirmation.customId === 'get-card-to-deck') {
-        try {
-          await confirmation.update({ content: 'Adicionando carta ao deck...', components: [] });
-        } catch (error) {
-          console.error(error);
-        }
+    try {
+      const selectedOption = await response.awaitMessageComponent({ filter: collectorFilter, time: 60_000 });
+
+      if (selectedOption.customId === 'my-deck') {
+        await selectedOption.update({ content: 'Meu Deck', components: [], ephemeral: false });
+      } else if (selectedOption.customId === 'get-card-to-deck') {
+        await selectedOption.update({ content: 'Adicionar Carta ao Deck', components: [], ephemeral: false });
       }
     } catch (error) {
-      console.error(error);
+      await interaction.editReply({ content: 'Tempo esgotado!', components: [] });
     }
   },
 };
