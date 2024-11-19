@@ -7,7 +7,12 @@ module.exports = {
     .setName('perola-do-dia-audio')
     .setDescription('Join a voice channel and play a perola'),
 
-  async execute(interaction) {
+  async execute(interaction: {
+    reply?: any;
+    editReply?: any;
+    member?: { voice: { channel: any; channelId: any } };
+    guild?: { id: any };
+  }) {
     const perolas = [
       'ai denuncia gekko maxista.m4a',
       'é tudo culpa minha.m4a',
@@ -23,8 +28,6 @@ module.exports = {
     const random = Math.floor(Math.random() * (perolas.length - 1));
     const audio = perolas[random];
 
-    console.log(random);
-
     let resource = createAudioResource(`src/assets/${audio}`, {
       inlineVolume: true,
     });
@@ -33,7 +36,12 @@ module.exports = {
     }
 
     await interaction.reply('trying to connect...');
-    await voiceService.connect(interaction, resource);
-    return await interaction.editReply(`playing ${audio}`);
+
+    try {
+      await voiceService.connect(interaction, resource);
+      await interaction.editReply(`playing ${audio}`);
+    } catch (error) {
+      await interaction.editReply('Algo deu errado!');
+    }
   },
 };

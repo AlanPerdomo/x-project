@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder } from 'discord.js';
+import { ActionRowBuilder, AnyComponentBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder } from 'discord.js';
 
 module.exports = {
   cooldowns: new Map(),
@@ -24,20 +24,29 @@ module.exports = {
       .setEmoji('🌐')
       .setDisabled(true);
 
-    const row = new ActionRowBuilder().addComponents(myDeck, getCardToDeck, site);
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(myDeck, getCardToDeck, site);
 
     const response = await interaction.reply({
       content: 'Bem-vindo ao TCG!',
       components: [row],
       ephemeral: false,
     });
+
     const collectorFilter = i => i.user.id === interaction.user.id;
 
     try {
       const selectedOption = await response.awaitMessageComponent({ filter: collectorFilter, time: 60_000 });
+      console.log(selectedOption.customId === 'my-deck');
 
       if (selectedOption.customId === 'my-deck') {
-        await selectedOption.update({ content: 'Meu Deck', components: [], ephemeral: false });
+        try {
+          const command = interaction.client.commands.get(interaction.commandName);
+
+          await selectedOption.update({ content: 'Meu Deck', components: [], ephemeral: false });
+        } catch (error) {
+          await interaction.Reply({ content: 'Erro ao executar o comando Meu Deck', components: [] });
+          console.log(error);
+        }
       } else if (selectedOption.customId === 'get-card-to-deck') {
         await selectedOption.update({ content: 'Adicionar Carta ao Deck', components: [], ephemeral: false });
       }

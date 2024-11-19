@@ -1,4 +1,4 @@
-import { Events } from 'discord.js';
+import { Events, userMention } from 'discord.js';
 import { Collection } from 'discord.js';
 const wait = require('node:timers/promises').setTimeout;
 
@@ -10,13 +10,16 @@ module.exports = {
     isChatInputCommand: () => any;
     user: { id: any };
     reply: (arg0: { content: string; ephemeral: boolean }) => any;
-    editReply: (arg0: { content: string; ephemeral: boolean }) => any;
+    editReply: (arg0: { content: string; ephemeral: boolean; components?: any }) => any;
     deleteReply: () => any;
     replied: any;
     deferred: any;
     followUp: (arg0: { content: string; ephemeral: boolean }) => any;
     isButton: () => any;
-    message: { fetch: () => any };
+    message: {
+      edit(arg0: { content: string; components: never[] }): unknown;
+      fetch: () => any;
+    };
     customId: any;
   }) {
     const { cooldowns } = interaction.client;
@@ -25,13 +28,18 @@ module.exports = {
       cooldowns.set(interaction.commandName, new Collection());
     }
 
-    async function timer(command: any) {
-      console.log(command.data.name);
+    async function timer(command: { data: { name: any }; cooldowns: any }) {
       const now = Date.now();
       const timestamps = cooldowns.get(command.data.name);
-      console.log(timestamps);
-      const defaultCooldownDuration = 30;
+      const defaultCooldownDuration = 5;
       const cooldownAmount = (command.cooldowns ?? defaultCooldownDuration) * 1000;
+      const user = userMention(interaction.user.id);
+
+      if (!timestamps) {
+        timestamps.set(interaction.user.id, now);
+        setTimeout(() => timestamps.delete(interaction.user.id), cooldownAmount);
+        return;
+      }
 
       if (timestamps.has(interaction.user.id)) {
         const expirationTime = timestamps.get(interaction.user.id) + cooldownAmount;
@@ -40,13 +48,16 @@ module.exports = {
           const expiredTimestamp = Math.round(expirationTime / 1_000);
           await interaction.reply({
             content: `Please wait, you are on a cooldown for \`${command.data.name}\`. You can use it again <t:${expiredTimestamp}:R>.`,
-            ephemeral: true,
+            ephemeral: false,
           });
           await wait(cooldownAmount - 1);
         }
-        await interaction.editReply({ content: `You can use \`${command.data.name}\` again!`, ephemeral: true });
-        await wait(3000);
-        return interaction.deleteReply();
+        await interaction.editReply({
+          content: `${user} You can use \`${command.data.name}\` again!`,
+          ephemeral: false,
+        });
+        await wait(120000);
+        return 'delete';
       }
 
       timestamps.set(interaction.user.id, now);
@@ -55,13 +66,13 @@ module.exports = {
 
     if (interaction.isChatInputCommand()) {
       const command = interaction.client.commands.get(interaction.commandName);
-      await timer(command);
+      if ((await timer(command)) == 'delete') return interaction.deleteReply();
+
       if (!command) {
         console.error(`No command matching ${interaction.commandName} was found.`);
         return;
       }
       try {
-        // console.log(command);
         await command.execute(interaction);
       } catch (error) {
         console.error(error);
@@ -72,22 +83,13 @@ module.exports = {
         }
       }
     } else if (interaction.isButton()) {
-      const command = interaction.client.commands.get(interaction.customId);
-      if (!command) {
-        console.error(`No command matching ${interaction.commandName} was found.`);
-        return;
-      }
-      try {
-        // console.log(command);
-        // await timer(command);
-        await command.execute(interaction);
-      } catch (error) {
-        console.error(error);
-        if (interaction.replied || interaction.deferred) {
-          await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
-        } else {
-          await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-        }
+      switch (interaction.customId) {
+        case 'my-deck':
+          await interaction.message.edit({
+            content: 'Meu Deck',
+            components: [],
+          });
+          break;
       }
     }
   },

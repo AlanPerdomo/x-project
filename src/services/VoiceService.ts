@@ -1,4 +1,5 @@
 import {
+  AudioResource,
   createAudioPlayer,
   DiscordGatewayAdapterCreator,
   DiscordGatewayAdapterLibraryMethods,
@@ -53,7 +54,10 @@ class VoiceService {
     guilds.add(guild.id);
   }
 
-  async connect(interaction, resource) {
+  async connect(
+    interaction: { reply?: any; editReply?: any; member: any; guild: any },
+    resource: AudioResource<unknown>,
+  ) {
     const channel = interaction.member.voice.channel;
     const voiceConnection = joinVoiceChannel({
       channelId: interaction.member.voice.channelId,
