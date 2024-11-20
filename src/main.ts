@@ -41,7 +41,8 @@ for (const folder of commandFolders) {
 }
 
 // load buttons
-const buttonsPath = path.join(__dirname, 'commands buttons');
+const buttonsPath = path.join(__dirname, 'commands buttons/TCG');
+console.log(buttonsPath);
 const buttonFiles = fs.readdirSync(buttonsPath).filter((file: string) => file.endsWith('.js'));
 
 for (const file of buttonFiles) {

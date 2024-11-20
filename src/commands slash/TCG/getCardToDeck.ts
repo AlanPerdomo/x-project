@@ -6,7 +6,7 @@ function getRandomColor() {
 }
 
 module.exports = {
-  cooldowns: 60,
+  cooldown: 60,
   data: new SlashCommandBuilder().setName('get-card-to-deck').setDescription('Adiciona uma carta ao seu deck'),
 
   async execute(interaction: {
