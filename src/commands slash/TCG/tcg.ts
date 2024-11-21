@@ -1,4 +1,4 @@
-import { ActionRowBuilder, AnyComponentBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder } from 'discord.js';
 
 module.exports = {
   data: new SlashCommandBuilder().setName('tcg').setDescription('Exibe informações sobre o TCG'),

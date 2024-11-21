@@ -2,7 +2,7 @@ import { SlashCommandBuilder, userMention } from 'discord.js';
 import { tcgService } from '../../services/TCGService';
 
 module.exports = {
-  cooldown: 60,
+  // cooldown: 60,
   data: new SlashCommandBuilder().setName('my-deck').setDescription('Exibe seu deck atual'),
 
   async execute(interaction: {

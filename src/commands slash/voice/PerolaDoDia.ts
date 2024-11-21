@@ -1,6 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { voiceService } from '../../services/VoiceService';
-import { createAudioResource } from '@discordjs/voice';
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -28,20 +27,13 @@ module.exports = {
     const random = Math.floor(Math.random() * (perolas.length - 1));
     const audio = perolas[random];
 
-    let resource = createAudioResource(`src/assets/${audio}`, {
-      inlineVolume: true,
-    });
-    if (resource.volume) {
-      resource.volume.setVolume(0.5);
-    }
-
     await interaction.reply('trying to connect...');
-
     try {
-      await voiceService.connect(interaction, resource);
+      await voiceService.play(interaction, `src/assets/${audio}`);
       await interaction.editReply(`playing ${audio}`);
     } catch (error) {
       await interaction.editReply('Algo deu errado!');
+      console.log(error);
     }
   },
 };

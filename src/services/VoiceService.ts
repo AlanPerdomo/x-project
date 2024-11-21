@@ -1,10 +1,14 @@
 import {
-  AudioResource,
   createAudioPlayer,
   DiscordGatewayAdapterCreator,
   DiscordGatewayAdapterLibraryMethods,
   joinVoiceChannel,
   NoSubscriberBehavior,
+  VoiceConnectionStatus,
+  entersState,
+  createAudioResource,
+  StreamType,
+  AudioPlayerStatus,
 } from '@discordjs/voice';
 import {
   Snowflake,
@@ -21,6 +25,15 @@ import {
 const adapters = new Map<Snowflake, DiscordGatewayAdapterLibraryMethods>();
 const trackedClients = new Set<Client>();
 const trackedShards = new Map<number, Set<Snowflake>>();
+
+const player = createAudioPlayer({
+  behaviors: {
+    noSubscriber: NoSubscriberBehavior.Play,
+    maxMissedFrames: Math.round(5000 / 20),
+  },
+  debug: true,
+});
+
 class VoiceService {
   async trackClient(client: Client) {
     if (trackedClients.has(client)) return;
@@ -54,28 +67,23 @@ class VoiceService {
     guilds.add(guild.id);
   }
 
-  async connect(
-    interaction: { reply?: any; editReply?: any; member: any; guild: any },
-    resource: AudioResource<unknown>,
-  ) {
+  async connect(interaction: { reply?: any; editReply?: any; member: any; guild: any }) {
     const channel = interaction.member.voice.channel;
     const voiceConnection = joinVoiceChannel({
       channelId: interaction.member.voice.channelId,
       guildId: interaction.guild.id,
       adapterCreator: await this.createDiscordJSAdapter(channel),
-      selfDeaf: false,
-      selfMute: false,
+      // selfDeaf: false,
+      // selfMute: false,
     });
-
-    const player = createAudioPlayer({
-      behaviors: {
-        noSubscriber: NoSubscriberBehavior.Play,
-        maxMissedFrames: Math.round(5000 / 20),
-      },
-    });
-
-    voiceConnection.subscribe(player);
-    player.play(resource);
+    try {
+      await entersState(voiceConnection, VoiceConnectionStatus.Ready, 30_000);
+      console.log('Connected to voice channel');
+      return voiceConnection;
+    } catch (error) {
+      voiceConnection.destroy();
+      throw error;
+    }
   }
 
   async createDiscordJSAdapter(channel: VoiceBasedChannel): Promise<DiscordGatewayAdapterCreator> {
@@ -96,6 +104,20 @@ class VoiceService {
         },
       };
     };
+  }
+
+  async play(interaction: any, audio: string) {
+    const voiceConnection = await this.connect(interaction);
+    voiceConnection.subscribe(player);
+
+    console.log(trackedClients);
+
+    const resource = createAudioResource(audio, {
+      inputType: StreamType.Arbitrary,
+    });
+
+    player.play(resource);
+    return entersState(player, AudioPlayerStatus.Playing, 5000);
   }
 
   async disconnect() {}

@@ -2,7 +2,7 @@ import { ButtonInteraction, userMention } from 'discord.js';
 import { tcgService } from '../../services/TCGService';
 
 module.exports = {
-  cooldown: 60,
+  // cooldown: 60,
   customId: 'my-deck',
   async execute(interaction: ButtonInteraction) {
     const user = userMention(interaction.user.id);

@@ -14,7 +14,7 @@ interface Command {
 async function deployCommands() {
   const commands: { name: string }[] = [];
 
-  const foldersPath = path.join(__dirname, 'commands');
+  const foldersPath = path.join(__dirname, 'commands slash');
   const commandFolders = fs.readdirSync(foldersPath);
 
   for (const folder of commandFolders) {
