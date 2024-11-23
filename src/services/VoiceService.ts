@@ -58,6 +58,14 @@ class VoiceService {
     });
   }
 
+  async attachRecorder() {
+    const resource = createAudioResource('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', {
+      inputType: StreamType.Arbitrary,
+    });
+
+    player.play(resource);
+  }
+
   async trackGuild(guild: Guild) {
     let guilds = trackedShards.get(guild.shardId);
     if (!guilds) {
@@ -106,17 +114,20 @@ class VoiceService {
     };
   }
 
-  async play(interaction: any, audio: string) {
+  async play(interaction: any, audio: string, stream = false) {
     const voiceConnection = await this.connect(interaction);
     voiceConnection.subscribe(player);
 
-    console.log(trackedClients);
+    console.log(stream);
 
-    const resource = createAudioResource(audio, {
-      inputType: StreamType.Arbitrary,
-    });
-
-    player.play(resource);
+    if (!stream) {
+      const resource = createAudioResource(audio, {
+        inputType: StreamType.Arbitrary,
+      });
+      player.play(resource);
+    } else if (stream) {
+      await this.attachRecorder();
+    }
     return entersState(player, AudioPlayerStatus.Playing, 5000);
   }
 

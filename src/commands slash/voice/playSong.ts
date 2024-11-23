@@ -12,7 +12,7 @@ module.exports = {
 
     await interaction.reply('trying to connect...');
     try {
-      await voiceService.play(interaction, song);
+      await voiceService.play(interaction, song, true);
       await interaction.editReply(`playing ${song}`);
     } catch (error) {
       await interaction.editReply('Oops, algo deu errado!');

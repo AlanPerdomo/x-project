@@ -15,7 +15,7 @@ const client = new Client({
 });
 
 // deployCommands();
-// console.log(generateDependencyReport());
+console.log(generateDependencyReport());
 
 client.cooldowns = new Collection();
 client.commands = new Collection();
