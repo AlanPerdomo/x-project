@@ -21,10 +21,12 @@ import {
   Events,
   Status,
 } from 'discord.js';
+import play from 'play-dl';
 
 const adapters = new Map<Snowflake, DiscordGatewayAdapterLibraryMethods>();
 const trackedClients = new Set<Client>();
 const trackedShards = new Map<number, Set<Snowflake>>();
+const url = 'CHIHIRO';
 
 const player = createAudioPlayer({
   behaviors: {
@@ -59,9 +61,14 @@ class VoiceService {
   }
 
   async attachRecorder() {
-    const resource = createAudioResource('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', {
-      inputType: StreamType.Arbitrary,
-    });
+    const isSupported = await play.validate(url);
+    console.log(isSupported);
+    const search = await play.search(url);
+    const stream = await play.stream(`${search[0]?.url}`);
+
+    console.log(search[0]?.url);
+
+    const resource = createAudioResource(stream.stream, { inputType: StreamType.Arbitrary });
 
     player.play(resource);
   }
@@ -77,6 +84,10 @@ class VoiceService {
 
   async connect(interaction: { reply?: any; editReply?: any; member: any; guild: any }) {
     const channel = interaction.member.voice.channel;
+
+    if (!channel) {
+      return await interaction.editReply('Você não está em um canal de voz!');
+    }
     const voiceConnection = joinVoiceChannel({
       channelId: interaction.member.voice.channelId,
       guildId: interaction.guild.id,
@@ -116,9 +127,9 @@ class VoiceService {
 
   async play(interaction: any, audio: string, stream = false) {
     const voiceConnection = await this.connect(interaction);
-    voiceConnection.subscribe(player);
+    if (!voiceConnection) return;
 
-    console.log(stream);
+    voiceConnection.subscribe(player);
 
     if (!stream) {
       const resource = createAudioResource(audio, {

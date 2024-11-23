@@ -30,9 +30,8 @@ module.exports = {
     await interaction.reply('trying to connect...');
     try {
       await voiceService.play(interaction, `src/assets/${audio}`);
-      await interaction.editReply(`playing ${audio}`);
+      return await interaction.editReply(`playing ${audio}`);
     } catch (error) {
-      await interaction.editReply('Algo deu errado!');
       console.log(error);
     }
   },
