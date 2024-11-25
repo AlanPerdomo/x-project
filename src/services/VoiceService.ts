@@ -21,12 +21,17 @@ import {
   Events,
   Status,
 } from 'discord.js';
-import play from 'play-dl';
+import { spawn } from 'child_process';
 
 const adapters = new Map<Snowflake, DiscordGatewayAdapterLibraryMethods>();
 const trackedClients = new Set<Client>();
 const trackedShards = new Map<number, Set<Snowflake>>();
-const url = 'CHIHIRO';
+const url =
+  // 'https://www.youtube.com/watch?v=V9PVRfjEBTI';
+  // 'https://www.youtube.com/watch?v=V9PVRfjEBTI&list=RDEMcce0hP5SVByOVCd8UWUHEA&start_radio=1';
+  'https://play.ilovemusic.de/ilm_iloveradio/';
+// 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+// 'https://ilm.stream35.radiohost.de/ilm_iloveradio_mp3-192?context=fHA6LTE=&listenerid=1ea4520acf9782d82085d00f37940983&awparams=companionAds:true&aw_0_req.userConsentV2=CQImD0AQImD0AAFADBDEBRFsAP_gAAAAAAYgHvQJwACAALAAqABcADIAHAAPAAgABJACcAKIAWABaADKAIwAjgBRAC4AHMAQYAnABXADVgHcAd4BCACJgHAAOqAfsBDoCKgEagJEASeAnEBUoC3gF5gL2AYAA3AB7wJEQAQJEAFhoAMAAQSIEQAYAAgkQCgAwABBIgJABgACCRAqADAAEEiBkAGAAIJEDoAMAAQSIIQAYAAgkQSgAwABBIgpABgACCRBaADAAEEiAAAA.YAAAAAAAAAAA&aw_0_1st.playerid=ilovemusic_web&aw_0_1st.1plusxAudience=2,2k,2l&_art=dD0xNzMyNDk0ODgxJmQ9NDliZjUyYzBjOWM5NjEwOWE3ZTk';
 
 const player = createAudioPlayer({
   behaviors: {
@@ -61,14 +66,21 @@ class VoiceService {
   }
 
   async attachRecorder() {
-    const isSupported = await play.validate(url);
-    console.log(isSupported);
-    const search = await play.search(url);
-    const stream = await play.stream(`${search[0]?.url}`);
+    const ffmpeg = spawn('ffmpeg', [
+      '-i',
+      url, // Input URL
+      '-f',
+      's16le', // Format to PCM
+      '-ar',
+      '48000', // Sample rate
+      '-ac',
+      '2', // Number of audio channels
+      'pipe:1', // Output to stdout
+    ]);
 
-    console.log(search[0]?.url);
-
-    const resource = createAudioResource(stream.stream, { inputType: StreamType.Arbitrary });
+    const resource = createAudioResource(ffmpeg.stdout, {
+      inputType: StreamType.Raw,
+    });
 
     player.play(resource);
   }
