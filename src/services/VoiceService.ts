@@ -20,8 +20,10 @@ import {
   VoiceBasedChannel,
   Events,
   Status,
+  CommandInteraction,
 } from 'discord.js';
 import { spawn } from 'child_process';
+import { device } from '../../config.json';
 
 const adapters = new Map<Snowflake, DiscordGatewayAdapterLibraryMethods>();
 const trackedClients = new Set<Client>();
@@ -65,24 +67,51 @@ class VoiceService {
     });
   }
 
+  // async attachRecorder() {
+  //   const ffmpeg = spawn('ffmpeg', [
+  //     '-i',
+  //     url, // Input URL
+  //     '-f',
+  //     's16le', // Format to PCM
+  //     '-ar',
+  //     '48000', // Sample rate
+  //     '-ac',
+  //     '2', // Number of audio channels
+  //     'pipe:1', // Output to stdout
+  //   ]);
+
+  //   const resource = createAudioResource(ffmpeg.stdout, {
+  //     inputType: StreamType.Raw,
+  //   });
+
+  //   player.play(resource);
+  // }
+
   async attachRecorder() {
     const ffmpeg = spawn('ffmpeg', [
-      '-i',
-      url, // Input URL
       '-f',
-      's16le', // Format to PCM
+      'pulse', // 'dshow ' para Windows, 'pulse' para Linux ou macOS
+      '-i',
+      `${device}`,
+      '-f',
+      's16le',
       '-ar',
-      '48000', // Sample rate
+      '48000',
       '-ac',
-      '2', // Number of audio channels
-      'pipe:1', // Output to stdout
+      '2',
+      '-loglevel',
+      'error', // Minimize a saída de log
+      'pipe:1',
     ]);
+
+    ffmpeg.stderr.on('data', data => console.error(`FFmpeg Error: ${data}`));
 
     const resource = createAudioResource(ffmpeg.stdout, {
       inputType: StreamType.Raw,
     });
 
     player.play(resource);
+    console.log(`Streaming ${device} to bot...`);
   }
 
   async trackGuild(guild: Guild) {
@@ -154,7 +183,17 @@ class VoiceService {
     return entersState(player, AudioPlayerStatus.Playing, 5000);
   }
 
-  async disconnect() {}
+  async disconnect(interaction) {
+    const voiceConnection = await this.connect(interaction);
+    if (!voiceConnection) return;
+    try {
+      await voiceConnection.destroy();
+      return interaction.editReply('Desconectado com sucesso!');
+    } catch (error) {
+      console.error(error);
+      return interaction.editReply('Algo deu errado!');
+    }
+  }
 }
 const voiceService = new VoiceService();
 export { voiceService };

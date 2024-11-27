@@ -7,7 +7,11 @@ module.exports = {
     .setDescription('Join a voice channel and play a song')
     .addStringOption(option => option.setName('song').setDescription('The song to play').setRequired(true)),
 
-  async execute(interaction) {
+  async execute(interaction: {
+    options: { getString: (arg0: string) => any };
+    reply: (arg0: string) => any;
+    editReply: (arg0: string) => any;
+  }) {
     const song = interaction.options.getString('song');
 
     await interaction.reply('trying to connect...');
@@ -15,7 +19,7 @@ module.exports = {
       await voiceService.play(interaction, song, true);
       return await interaction.editReply(`playing ${song}`);
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   },
 };
