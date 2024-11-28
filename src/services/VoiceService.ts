@@ -9,6 +9,8 @@ import {
   createAudioResource,
   StreamType,
   AudioPlayerStatus,
+  VoiceReceiver,
+  EndBehaviorType,
 } from '@discordjs/voice';
 import {
   Snowflake,
@@ -20,10 +22,12 @@ import {
   VoiceBasedChannel,
   Events,
   Status,
-  CommandInteraction,
+  User,
 } from 'discord.js';
 import { spawn } from 'child_process';
 import { device } from '../../config.json';
+import prism from 'prism-media';
+import fs from 'fs';
 
 const adapters = new Map<Snowflake, DiscordGatewayAdapterLibraryMethods>();
 const trackedClients = new Set<Client>();
@@ -67,27 +71,7 @@ class VoiceService {
     });
   }
 
-  // async attachRecorder() {
-  //   const ffmpeg = spawn('ffmpeg', [
-  //     '-i',
-  //     url, // Input URL
-  //     '-f',
-  //     's16le', // Format to PCM
-  //     '-ar',
-  //     '48000', // Sample rate
-  //     '-ac',
-  //     '2', // Number of audio channels
-  //     'pipe:1', // Output to stdout
-  //   ]);
-
-  //   const resource = createAudioResource(ffmpeg.stdout, {
-  //     inputType: StreamType.Raw,
-  //   });
-
-  //   player.play(resource);
-  // }
-
-  async attachRecorder() {
+  async playStream() {
     const ffmpeg = spawn('ffmpeg', [
       '-f',
       'pulse', // 'dshow ' para Windows, 'pulse' para Linux ou macOS
@@ -114,6 +98,77 @@ class VoiceService {
     console.log(`Streaming ${device} to bot...`);
   }
 
+  async createListeningStream(receiver: VoiceReceiver, user: User) {
+    const path = '../recordings';
+    if (!fs.existsSync(path)) {
+      fs.mkdirSync(path, { recursive: true });
+    }
+
+    const opusStream = receiver.subscribe(user.id, {
+      end: {
+        behavior: EndBehaviorType.AfterSilence,
+        duration: 1000,
+      },
+    });
+
+    // Converte Opus para PCM usando prism-media
+    const pcmStream = new prism.opus.Decoder({
+      rate: 48000, // Taxa de amostragem
+      channels: 2, // Áudio estéreo
+      frameSize: 960, // Tamanho do frame
+    });
+    const filename = `../recordings/${Date.now()}-${user.username}.mp3`;
+
+    const ffmpeg = spawn('ffmpeg', [
+      '-loglevel',
+      'debug', // Adiciona informações detalhadas
+      '-f',
+      's16le',
+      '-ar',
+      '48000',
+      '-ac',
+      '2',
+      '-i',
+      'pipe:0',
+      '-b:a',
+      '192k',
+      filename,
+    ]);
+
+    console.log(`👂 Started recording with FFmpeg: ${filename}`);
+
+    // Conecta os streams
+    opusStream.pipe(pcmStream).pipe(ffmpeg.stdin);
+
+    ffmpeg.on('close', code => {
+      if (code === 0) {
+        console.log(`✅ Recorded ${filename}`);
+      } else {
+        console.warn(`❌ FFmpeg exited with code ${code}`);
+      }
+    });
+
+    ffmpeg.stderr.on('data', data => {
+      console.error(`FFmpeg Error: ${data}`);
+    });
+
+    ffmpeg.on('error', error => {
+      console.error(`❌ FFmpeg error: ${error.message}`);
+      ffmpeg.kill();
+    });
+
+    pcmStream.on('end', () => {
+      ffmpeg.stdin.end();
+    });
+
+    setTimeout(() => {
+      if (!ffmpeg.killed) {
+        console.warn('⚠️ Timeout: FFmpeg pode estar esperando dados do stream.');
+        ffmpeg.kill('SIGINT');
+      }
+    }, 5000); // 5 segundos
+  }
+
   async trackGuild(guild: Guild) {
     let guilds = trackedShards.get(guild.shardId);
     if (!guilds) {
@@ -123,7 +178,7 @@ class VoiceService {
     guilds.add(guild.id);
   }
 
-  async connect(interaction: { reply?: any; editReply?: any; member: any; guild: any }) {
+  async connect(interaction, deaf = true, mute = false) {
     const channel = interaction.member.voice.channel;
 
     if (!channel) {
@@ -133,8 +188,8 @@ class VoiceService {
       channelId: interaction.member.voice.channelId,
       guildId: interaction.guild.id,
       adapterCreator: await this.createDiscordJSAdapter(channel),
-      // selfDeaf: false,
-      // selfMute: false,
+      selfDeaf: deaf,
+      selfMute: mute,
     });
     try {
       await entersState(voiceConnection, VoiceConnectionStatus.Ready, 30_000);
@@ -178,9 +233,20 @@ class VoiceService {
       });
       player.play(resource);
     } else if (stream) {
-      await this.attachRecorder();
+      await this.playStream();
     }
     return entersState(player, AudioPlayerStatus.Playing, 5000);
+  }
+
+  async record(interaction) {
+    const voiceConnection = await this.connect(interaction, false);
+    const receiver = voiceConnection.receiver;
+    if (receiver) {
+      await this.createListeningStream(receiver, interaction.user);
+      await interaction.editReply('Gravando...');
+    } else {
+      await interaction.editReply('Algo deu errado!');
+    }
   }
 
   async disconnect(interaction) {
