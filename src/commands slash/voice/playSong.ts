@@ -1,3 +1,5 @@
+// needs to be fix
+
 import { SlashCommandBuilder } from 'discord.js';
 import { voiceService } from '../../services/VoiceService';
 
@@ -7,11 +9,9 @@ module.exports = {
     .setDescription('Join a voice channel and play a song')
     .addStringOption(option => option.setName('song').setDescription('The song to play').setRequired(true)),
 
-  async execute(interaction: {
-    options: { getString: (arg0: string) => any };
-    reply: (arg0: string) => any;
-    editReply: (arg0: string) => any;
-  }) {
+  async execute(interaction) {
+    const radios = ['https://play.ilovemusic.de/ilm_iloveradio/'];
+
     const song = interaction.options.getString('song');
 
     await interaction.reply('trying to connect...');

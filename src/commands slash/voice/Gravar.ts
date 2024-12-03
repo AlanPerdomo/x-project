@@ -4,7 +4,7 @@ import { voiceService } from '../../services/VoiceService';
 module.exports = {
   data: new SlashCommandBuilder().setName('gravar').setDescription('Grava o canal de voz'),
 
-  async execute(interaction) {
+  async execute(interaction: { reply: (arg0: string) => any; editReply: (arg0: string) => any }) {
     await interaction.reply('iniciando gravação...');
     try {
       await voiceService.record(interaction);
