@@ -73,7 +73,7 @@ module.exports = {
         }
 
         const uniqueId = interaction.commandName;
-        const defaultCooldown = command.cooldown ?? 3;
+        const defaultCooldown = command.cooldown;
         const isOnCooldown = await handleCooldown(interaction, uniqueId, cooldowns, defaultCooldown);
 
         if (isOnCooldown) return;
@@ -94,7 +94,7 @@ module.exports = {
         }
 
         const uniqueId = interaction.customId;
-        const defaultCooldown = button.cooldown ?? 5;
+        const defaultCooldown = button.cooldown;
         const isOnCooldown = await handleCooldown(interaction, uniqueId, cooldowns, defaultCooldown);
 
         if (isOnCooldown) return;

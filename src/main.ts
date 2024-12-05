@@ -22,11 +22,11 @@ client.commands = new Collection();
 client.buttons = new Collection();
 
 // load commands
-const foldersPath = path.join(__dirname, 'commands slash');
-const commandFolders = fs.readdirSync(foldersPath);
+const commandFoldersPath = path.join(__dirname, 'commands slash');
+const commandFolders = fs.readdirSync(commandFoldersPath);
 
 for (const folder of commandFolders) {
-  const commandsPath = path.join(foldersPath, folder);
+  const commandsPath = path.join(commandFoldersPath, folder);
   const commandFiles = fs.readdirSync(commandsPath).filter((file: string) => file.endsWith('.js'));
   for (const file of commandFiles) {
     const filePath = path.join(commandsPath, file);
@@ -41,18 +41,21 @@ for (const folder of commandFolders) {
 }
 
 // load buttons
-const buttonsPath = path.join(__dirname, 'commands buttons/TCG');
-console.log(buttonsPath);
-const buttonFiles = fs.readdirSync(buttonsPath).filter((file: string) => file.endsWith('.js'));
+const buttonsFoldersPath = path.join(__dirname, 'commands buttons');
+const buttonFolders = fs.readdirSync(buttonsFoldersPath);
 
-for (const file of buttonFiles) {
-  const filePath = path.join(buttonsPath, file);
-  const button = require(filePath);
-  if ('customId' in button && 'execute' in button) {
-    client.buttons.set(button.customId, button);
-    console.log(`[BUTTON] ${button.customId} has been loaded!`);
-  } else {
-    console.log(`[WARNING] The button at ${filePath} is missing a required "customId" or "execute" property.`);
+for (const folder of buttonFolders) {
+  const buttonsPath = path.join(buttonsFoldersPath, folder);
+  const buttonFiles = fs.readdirSync(buttonsPath).filter((file: string) => file.endsWith('.js'));
+  for (const file of buttonFiles) {
+    const filePath = path.join(buttonsPath, file);
+    const button = require(filePath);
+    if ('customId' in button && 'execute' in button) {
+      client.buttons.set(button.customId, button);
+      console.log(`[BUTTON] ${button.customId} has been loaded!`);
+    } else {
+      console.log(`[WARNING] The button at ${filePath} is missing a required "customId" or "execute" property.`);
+    }
   }
 }
 

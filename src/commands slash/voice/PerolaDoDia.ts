@@ -28,8 +28,9 @@ module.exports = {
     const audio = perolas[random];
 
     await interaction.reply('trying to connect...');
+
     try {
-      await voiceService.play(interaction, `src/assets/${audio}`);
+      await voiceService.play(interaction, `src/assets/${audio}`, 'audio');
       return await interaction.editReply(`playing ${audio}`);
     } catch (error) {
       console.log(error);

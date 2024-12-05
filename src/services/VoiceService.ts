@@ -7,10 +7,9 @@ import {
   createAudioResource,
   StreamType,
   AudioPlayerStatus,
-  VoiceReceiver,
-  EndBehaviorType,
   NoSubscriberBehavior,
   DiscordGatewayAdapterCreator,
+  AudioPlayerPlayingState,
 } from '@discordjs/voice';
 import {
   Client,
@@ -21,11 +20,10 @@ import {
   GatewayVoiceServerUpdateDispatchData,
   GatewayVoiceStateUpdateDispatchData,
   Status,
+  ButtonInteraction,
+  CacheType,
 } from 'discord.js';
 import { spawn } from 'child_process';
-import prism from 'prism-media';
-import fs from 'fs';
-import { device } from '../../config.json';
 
 const adapters = new Map<string, any>();
 const trackedClients = new Set<Client>();
@@ -39,6 +37,8 @@ const player = createAudioPlayer({
 });
 
 class VoiceService {
+  private currentVolume: number = 0.5;
+
   async trackClient(client: Client) {
     if (trackedClients.has(client)) return;
     trackedClients.add(client);
@@ -120,22 +120,31 @@ class VoiceService {
     return voiceConnection;
   }
 
-  async play(interaction: any, audio: string, stream = false) {
+  async play(interaction: any, src: string, _type: string) {
+    let resource;
     const voiceConnection = await this.connect(interaction);
     if (!voiceConnection) return;
 
     voiceConnection.subscribe(player);
-
-    const resource = stream
-      ? createAudioResource(await this.startStream(audio), {
+    switch (_type) {
+      case 'radio': {
+        resource = createAudioResource(await this.startStream(src), {
           inputType: StreamType.Raw,
           inlineVolume: true,
-        })
-      : createAudioResource(audio, { inputType: StreamType.Arbitrary });
+        });
+        break;
+      }
+      case 'audio': {
+        resource = createAudioResource(src, { inputType: StreamType.Arbitrary, inlineVolume: true });
+        break;
+      }
+      case 'yt': {
+        break;
+      }
+    }
 
-    resource.volume!.setVolume(0.1);
-
-    player.play(resource);
+    resource!.volume!.setVolume(this.currentVolume);
+    player.play(resource!);
 
     return entersState(player, AudioPlayerStatus.Playing, 5000);
   }
@@ -156,6 +165,26 @@ class VoiceService {
     ]);
     ffmpeg.stderr.on('data', data => console.error(`FFmpeg Error: ${data}`));
     return ffmpeg.stdout;
+  }
+
+  async setVolume(newVolume: number) {
+    this.currentVolume = Math.max(0.0, Math.min(newVolume, 1.5));
+    if (player.state.status === AudioPlayerStatus.Playing) {
+      const state = player.state as AudioPlayerPlayingState;
+      state.resource.volume?.setVolume(this.currentVolume);
+    }
+  }
+
+  async increaseVolume(interaction: ButtonInteraction<CacheType>, step: number = 0.1) {
+    this.setVolume(this.currentVolume + step);
+    console.log(`Volume atual: ${(this.currentVolume * 100).toFixed(0)}% no servidor ${interaction.guild?.name}`);
+    return voiceService.currentVolume;
+  }
+
+  async decreaseVolume(interaction: ButtonInteraction<CacheType>, step: number = 0.1) {
+    this.setVolume(this.currentVolume - step);
+    console.log(`Volume atual: ${(this.currentVolume * 100).toFixed(0)}% no servidor ${interaction.guild?.name}`);
+    return voiceService.currentVolume;
   }
 
   async disconnect(interaction: any) {
