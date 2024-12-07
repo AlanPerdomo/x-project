@@ -10,6 +10,9 @@ module.exports = {
     editReply: (arg0: string) => any;
   }) {
     const radios = ['https://play.ilovemusic.de/ilm_iloveradio/'];
+    row.components[0]?.setDisabled(true);
+    row.components[1]?.setDisabled(false);
+    row.components[2]?.setDisabled(false);
 
     await interaction.reply({
       content: 'trying to connect...',

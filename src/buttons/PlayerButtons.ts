@@ -12,26 +12,28 @@ const pause = new ButtonBuilder()
   .setLabel('Pause')
   .setStyle(ButtonStyle.Secondary)
   .setEmoji('⏸️')
-  .setDisabled(true);
+  .setDisabled(false);
 
 const stop = new ButtonBuilder()
   .setCustomId('stop')
   .setLabel('Stop')
   .setStyle(ButtonStyle.Danger)
   .setEmoji('⏹️')
-  .setDisabled(true);
+  .setDisabled(false);
 
 const volumeDown = new ButtonBuilder()
   .setCustomId('volume-down')
   .setLabel('Volume Down')
   .setStyle(ButtonStyle.Secondary)
-  .setEmoji('🔉');
+  .setEmoji('🔉')
+  .setDisabled(false);
 
 const volumeUp = new ButtonBuilder()
   .setCustomId('volume-up')
   .setLabel('Volume Up')
   .setStyle(ButtonStyle.Secondary)
-  .setEmoji('🔊');
+  .setEmoji('🔊')
+  .setDisabled(false);
 
 const row = new ActionRowBuilder<ButtonBuilder>().addComponents(play, pause, stop, volumeDown, volumeUp);
 

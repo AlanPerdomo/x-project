@@ -29,15 +29,10 @@ const adapters = new Map<string, any>();
 const trackedClients = new Set<Client>();
 const trackedShards = new Map<number, Set<string>>();
 const voiceConnections = new Map<string, any>();
-
-const player = createAudioPlayer({
-  behaviors: {
-    noSubscriber: NoSubscriberBehavior.Play,
-  },
-});
+const voicePlayers = new Map<string, ReturnType<typeof createAudioPlayer>>();
 
 class VoiceService {
-  private currentVolume: number = 0.5;
+  private currentVolume: number = 0.2;
 
   async trackClient(client: Client) {
     if (trackedClients.has(client)) return;
@@ -70,6 +65,16 @@ class VoiceService {
     guilds.add(guild.id);
   }
 
+  async trackVoiceConnection(guild: { id: string; name: any }, voiceConnection: any) {
+    voiceConnections.set(guild.id, voiceConnection);
+
+    voiceConnection.on(VoiceConnectionStatus.Disconnected, async () => {
+      console.log('Disconnected from voice channel at guild', guild.name);
+      voiceConnections.delete(guild.id);
+      await entersState(voiceConnection, VoiceConnectionStatus.Disconnected, 30_000);
+    });
+  }
+
   async createDiscordJSAdapter(channel: VoiceBasedChannel): Promise<DiscordGatewayAdapterCreator> {
     return methods => {
       adapters.set(channel.guild.id, methods);
@@ -92,12 +97,12 @@ class VoiceService {
 
   async connect(interaction: any, deaf = true, mute = false) {
     const channel = interaction.member.voice.channel;
+    let voiceConnection = voiceConnections.get(interaction.guild.id);
     if (!channel) {
       await interaction.editReply('Você não está em um canal de voz!');
       return null;
     }
 
-    let voiceConnection = voiceConnections.get(interaction.guild.id);
     if (!voiceConnection) {
       voiceConnection = joinVoiceChannel({
         channelId: interaction.member.voice.channelId,
@@ -106,11 +111,18 @@ class VoiceService {
         selfDeaf: deaf,
         selfMute: mute,
       });
-      voiceConnections.set(interaction.guild.id, voiceConnection);
+      await this.trackVoiceConnection(interaction.guild, voiceConnection);
 
       try {
         await entersState(voiceConnection, VoiceConnectionStatus.Ready, 30_000);
         console.log('Connected to voice channel');
+        const player = createAudioPlayer({
+          behaviors: {
+            noSubscriber: NoSubscriberBehavior.Play,
+          },
+        });
+        voicePlayers.set(interaction.guild.id, player);
+        voiceConnection.subscribe(player);
       } catch (error) {
         voiceConnection.destroy();
         voiceConnections.delete(interaction.guild.id);
@@ -122,10 +134,16 @@ class VoiceService {
 
   async play(interaction: any, src: string, _type: string) {
     let resource;
+
     const voiceConnection = await this.connect(interaction);
     if (!voiceConnection) return;
 
-    voiceConnection.subscribe(player);
+    const player = voicePlayers.get(interaction.guild.id);
+    if (!player) {
+      await interaction.editReply('Erro ao iniciar o player!');
+      return;
+    }
+
     switch (_type) {
       case 'radio': {
         resource = createAudioResource(await this.startStream(src), {
@@ -149,6 +167,32 @@ class VoiceService {
     return entersState(player, AudioPlayerStatus.Playing, 5000);
   }
 
+  async resume(interaction: { guild: { id: string } }) {
+    const voiceConnection = voiceConnections.get(interaction.guild.id);
+    const player = voicePlayers.get(interaction.guild.id);
+    if (!voiceConnection) return;
+    if (!player) return;
+    player.unpause();
+    return entersState(player, AudioPlayerStatus.Playing, 5000);
+  }
+
+  async pause(interaction: { guild: { id: string }; update: (arg0: string) => any }) {
+    const voiceConnection = voiceConnections.get(interaction.guild.id);
+    const player = voicePlayers.get(interaction.guild.id);
+    if (!voiceConnection) return;
+    if (!player) return;
+    player.pause();
+    return entersState(player, AudioPlayerStatus.Paused, 5000);
+  }
+  async stop(interaction: any) {
+    const voiceConnection = voiceConnections.get(interaction.guild.id);
+    const player = voicePlayers.get(interaction.guild.id);
+    if (!voiceConnection) return;
+    if (!player) return;
+    player.stop();
+    return entersState(player, AudioPlayerStatus.Idle, 5000);
+  }
+
   async startStream(url: string) {
     const ffmpeg = spawn('ffmpeg', [
       '-i',
@@ -167,34 +211,50 @@ class VoiceService {
     return ffmpeg.stdout;
   }
 
-  async setVolume(newVolume: number) {
+  async setVolume(newVolume: number, interaction: ButtonInteraction<CacheType>) {
     this.currentVolume = Math.max(0.0, Math.min(newVolume, 1.5));
-    if (player.state.status === AudioPlayerStatus.Playing) {
+    const player = voicePlayers.get(interaction.guild!.id);
+    console.log(`Volume atual: ${(this.currentVolume * 100).toFixed(0)}% no servidor ${interaction.guild?.name}`);
+    if (player) {
       const state = player.state as AudioPlayerPlayingState;
-      state.resource.volume?.setVolume(this.currentVolume);
+      state.resource.volume!.setVolume(this.currentVolume);
     }
   }
 
   async increaseVolume(interaction: ButtonInteraction<CacheType>, step: number = 0.1) {
-    this.setVolume(this.currentVolume + step);
-    console.log(`Volume atual: ${(this.currentVolume * 100).toFixed(0)}% no servidor ${interaction.guild?.name}`);
-    return voiceService.currentVolume;
+    try {
+      this.setVolume(this.currentVolume + step, interaction);
+      return voiceService.currentVolume;
+    } catch (error) {
+      console.log(error);
+      return this.currentVolume;
+    }
   }
 
   async decreaseVolume(interaction: ButtonInteraction<CacheType>, step: number = 0.1) {
-    this.setVolume(this.currentVolume - step);
-    console.log(`Volume atual: ${(this.currentVolume * 100).toFixed(0)}% no servidor ${interaction.guild?.name}`);
-    return voiceService.currentVolume;
+    try {
+      this.setVolume(this.currentVolume - step, interaction);
+      return voiceService.currentVolume;
+    } catch (error) {
+      console.log(error);
+      return this.currentVolume;
+    }
   }
 
   async disconnect(interaction: any) {
-    const voiceConnection = voiceConnections.get(interaction.guild.id);
+    const guildId = interaction.guild.id;
+    const voiceConnection = voiceConnections.get(guildId);
     if (!voiceConnection) {
       await interaction.editReply('Não há nenhuma conexão ativa para desconectar!');
       return;
     }
+
+    const player = voicePlayers.get(guildId);
+    player?.stop();
+    voicePlayers.delete(guildId);
+
     voiceConnection.destroy();
-    voiceConnections.delete(interaction.guild.id);
+    voiceConnections.delete(guildId);
     await interaction.editReply('Desconectado com sucesso!');
   }
 }

@@ -1,5 +1,4 @@
 const { Events } = require('discord.js');
-// import { playSong, attachRecorder } from '../services/VoiceService';
 
 module.exports = {
   name: Events.ClientReady,

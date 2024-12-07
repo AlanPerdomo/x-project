@@ -1,3 +1,5 @@
+// Instagram URL expired, need to find a new way to get the image.
+
 import { AttachmentBuilder, SlashCommandBuilder } from 'discord.js';
 import { perolaService } from '../../services/PerolaService';
 const Canvas = require('@napi-rs/canvas');
