@@ -2,14 +2,14 @@ import { SlashCommandBuilder } from 'discord.js';
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('delete-messages')
-    .setDescription('Delete messages in a channel')
+    .setDescription('Deleta as mensagens do canal')
     .addChannelOption(option =>
-      option.setName('channel').setDescription('The channel to delete messages from').setRequired(true),
+      option.setName('channel').setDescription('O canal de texto onde deseja deletar as mensagens').setRequired(true),
     ),
   async execute(interaction: { options: { getChannel: (arg0: string) => any }; reply: (arg0: string) => any }) {
     const channel = interaction.options.getChannel('channel');
     if (!channel.isTextBased()) {
-      return interaction.reply('Please select a valid text channel.');
+      return interaction.reply('Por favor, escolha um canal de texto.');
     }
 
     if (channel.name === 'heimer-bot-test') {
@@ -21,19 +21,19 @@ module.exports = {
         );
 
         if (messagesToDelete.size === 0) {
-          return interaction.reply('No messages to delete within the last 14 days.');
+          return interaction.reply('Neh, nenhuma mensagem para deletar.');
         }
 
         // Deletar mensagens em massa.
         await channel.bulkDelete(messagesToDelete);
 
-        await interaction.reply(`Deleted ${messagesToDelete.size} messages from the channel.`);
+        await interaction.reply(` ${messagesToDelete.size} mensagem(s) deletada(s).`);
       } catch (error) {
         console.error(error);
-        await interaction.reply('There was an error trying to delete messages.');
+        await interaction.reply('Houve um erro ao deletar as mensagens.');
       }
     } else {
-      await interaction.reply('You can only delete messages in the "heimer-bot-test" channel.');
+      await interaction.reply('Você so pode deletar mensagens no "heimer-bot-test".');
     }
   },
 };
