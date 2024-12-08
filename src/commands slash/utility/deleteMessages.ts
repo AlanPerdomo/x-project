@@ -12,7 +12,7 @@ module.exports = {
       return interaction.reply('Por favor, escolha um canal de texto.');
     }
 
-    if (channel.name === 'heimer-bot-test') {
+    if (channel.name === 'heimer-bot-test' || channel.name === 'heimer') {
       try {
         // Buscar mensagens no canal.
         const messages = await channel.messages.fetch({ limit: 100 });
@@ -33,7 +33,7 @@ module.exports = {
         await interaction.reply('Houve um erro ao deletar as mensagens.');
       }
     } else {
-      await interaction.reply('Você so pode deletar mensagens no "heimer-bot-test".');
+      await interaction.reply('Você so pode deletar mensagens no "heimer-bot-test" ou "heimer".');
     }
   },
 };

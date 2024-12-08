@@ -7,21 +7,25 @@ module.exports = {
     .addChannelOption(option =>
       option.setName('channel').setDescription('The channel to delete messages from').setRequired(true),
     ),
-  async execute(interaction) {
+  async execute(interaction: {
+    options: { getChannel: (arg0: string) => any };
+    reply: (arg0: string) => any;
+    editReply: (arg0: string) => any;
+  }) {
     const channel = interaction.options.getChannel('channel');
 
     if (!channel.isTextBased()) {
       return interaction.reply('Por favor, escolha um canal de texto.');
     }
 
-    if (channel.name === 'heimer-bot-test') {
+    if (channel.name === 'heimer-bot-test' || channel.name === 'heimer') {
       try {
         await interaction.reply('Deletando todas as mensagens...');
 
         let lastMessageId = null;
 
         while (true) {
-          const messages = await channel.messages.fetch({
+          const messages: any = await channel.messages.fetch({
             limit: 50,
             ...(lastMessageId && { before: lastMessageId }),
           });
@@ -50,7 +54,7 @@ module.exports = {
         await interaction.editReply('Houve um erro ao deletar as mensagens.');
       }
     } else {
-      await interaction.reply('Você so pode deletar mensagens no "heimer-bot-test".');
+      await interaction.reply('Você so pode deletar mensagens no "heimer-bot-test" ou "heimer".');
     }
   },
 };

@@ -32,7 +32,7 @@ const voiceConnections = new Map<string, any>();
 const voicePlayers = new Map<string, ReturnType<typeof createAudioPlayer>>();
 
 class VoiceService {
-  private currentVolume: number = 0.2;
+  private currentVolume: number = 1;
 
   async trackClient(client: Client) {
     if (trackedClients.has(client)) return;
@@ -71,7 +71,7 @@ class VoiceService {
     voiceConnection.on(VoiceConnectionStatus.Disconnected, async () => {
       console.log('Disconnected from voice channel at guild', guild.name);
       voiceConnections.delete(guild.id);
-      await entersState(voiceConnection, VoiceConnectionStatus.Disconnected, 30_000);
+      return await entersState(voiceConnection, VoiceConnectionStatus.Disconnected, 30_000);
     });
   }
 
@@ -136,7 +136,7 @@ class VoiceService {
     let resource;
 
     const voiceConnection = await this.connect(interaction);
-    if (!voiceConnection) return;
+    if (voiceConnection == null) return;
 
     const player = voicePlayers.get(interaction.guild.id);
     if (!player) {
@@ -190,6 +190,7 @@ class VoiceService {
     if (!voiceConnection) return;
     if (!player) return;
     player.stop();
+    await voiceConnection.disconnect();
     return entersState(player, AudioPlayerStatus.Idle, 5000);
   }
 
