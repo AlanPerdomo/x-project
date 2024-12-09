@@ -10,6 +10,7 @@ import {
   NoSubscriberBehavior,
   DiscordGatewayAdapterCreator,
   AudioPlayerPlayingState,
+  AudioPlayer,
 } from '@discordjs/voice';
 import {
   Client,
@@ -66,13 +67,21 @@ class VoiceService {
     guilds.add(guild.id);
   }
 
-  async trackVoiceConnection(guild: { id: string; name: any }, voiceConnection: any) {
-    voiceConnections.set(guild.id, voiceConnection);
+  async trackVoiceConnection(
+    interaction: { guild: { id: string; name: any }; member: { voice: { channel: any } } },
+    voiceConnection: any,
+  ) {
+    voiceConnections.set(interaction.guild.id, voiceConnection);
 
     voiceConnection.on(VoiceConnectionStatus.Disconnected, async () => {
-      console.log('Disconnected from voice channel at guild', guild.name);
-      voiceConnections.delete(guild.id);
-      return await entersState(voiceConnection, VoiceConnectionStatus.Disconnected, 30_000);
+      console.log(
+        'Disconnected from voice channel',
+        interaction.member.voice.channel.name,
+        'at guild',
+        interaction.guild.name,
+      );
+      voiceConnections.delete(interaction.guild.id);
+      return;
     });
   }
 
@@ -112,7 +121,7 @@ class VoiceService {
         selfDeaf: deaf,
         selfMute: mute,
       });
-      await this.trackVoiceConnection(interaction.guild, voiceConnection);
+      await this.trackVoiceConnection(interaction, voiceConnection);
 
       try {
         await entersState(voiceConnection, VoiceConnectionStatus.Ready, 30_000);
@@ -147,7 +156,7 @@ class VoiceService {
 
     switch (_type) {
       case 'radio': {
-        resource = createAudioResource(await this.startStream(src), {
+        resource = createAudioResource(await this.startStream(player, src), {
           inputType: StreamType.Raw,
           inlineVolume: true,
         });
@@ -206,7 +215,7 @@ class VoiceService {
     return entersState(player, AudioPlayerStatus.Idle, 5000);
   }
 
-  async startStream(url: string) {
+  async startStream(player: AudioPlayer, url: string) {
     const ffmpeg = spawn('ffmpeg', [
       '-i',
       url,
@@ -220,7 +229,9 @@ class VoiceService {
       'error',
       'pipe:1',
     ]);
-    ffmpeg.stderr.on('data', data => console.error(`FFmpeg Error: ${data}`));
+    if (player.state.status === AudioPlayerStatus.Playing) {
+      ffmpeg.stderr.on('data', data => console.error(`FFmpeg Error: ${data}`));
+    }
     return ffmpeg.stdout;
   }
 

@@ -18,7 +18,7 @@ module.exports = {
       description: `**${user}**, uma nova carta foi adicionada ao seu deck! Confira agora e fortaleça suas estratégias.`,
 
       thumbnail: {
-        url: `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${card.nome}_0.jpg`,
+        url: `https://ddragon.leagueoflegends.com/cdn/14.23.1/img/champion/${card.nome}.png`,
       },
       fields: [
         {
