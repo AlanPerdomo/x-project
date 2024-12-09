@@ -35,6 +35,22 @@ const volumeUp = new ButtonBuilder()
   .setEmoji('🔊')
   .setDisabled(false);
 
-const row = new ActionRowBuilder<ButtonBuilder>().addComponents(play, pause, stop, volumeDown, volumeUp);
+const next = new ButtonBuilder()
+  .setCustomId('next')
+  .setLabel('Next')
+  .setStyle(ButtonStyle.Secondary)
+  .setEmoji('⏩')
+  .setDisabled(true);
 
-export { play, pause, stop, volumeDown, volumeUp, row };
+const previous = new ButtonBuilder()
+  .setCustomId('previous')
+  .setLabel('Previous')
+  .setStyle(ButtonStyle.Secondary)
+  .setEmoji('⏪')
+  .setDisabled(true);
+
+const playerRow = new ActionRowBuilder<ButtonBuilder>().addComponents(play, pause, stop, previous, next);
+
+const radioRow = new ActionRowBuilder<ButtonBuilder>().addComponents(play, pause, stop, volumeDown, volumeUp);
+
+export { playerRow, radioRow };

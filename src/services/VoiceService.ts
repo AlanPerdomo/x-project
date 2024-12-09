@@ -24,6 +24,7 @@ import {
   CacheType,
 } from 'discord.js';
 import { spawn } from 'child_process';
+import ytdl from '@distube/ytdl-core';
 
 const adapters = new Map<string, any>();
 const trackedClients = new Set<Client>();
@@ -157,6 +158,17 @@ class VoiceService {
         break;
       }
       case 'yt': {
+        try {
+          const stream = ytdl(src, { filter: 'audioonly', highWaterMark: 1 << 25 });
+          resource = createAudioResource(stream, {
+            inputType: StreamType.Arbitrary,
+            inlineVolume: true,
+          });
+        } catch (error) {
+          console.error('Erro ao obter o áudio do YouTube:', error);
+          await interaction.editReply('Não foi possível reproduzir a música do YouTube.');
+          return;
+        }
         break;
       }
     }

@@ -1,24 +1,24 @@
-import { ButtonInteraction } from 'discord.js';
 import { voiceService } from '../../services/VoiceService';
-import { row } from '../../buttons/PlayerButtons';
+import { radioRow } from '../../buttons/PlayerButtons';
+import { ButtonInteraction, CacheType } from 'discord.js';
 
 module.exports = {
   customId: 'volume-up',
-  async execute(interaction: ButtonInteraction) {
+  async execute(interaction: ButtonInteraction<CacheType>) {
     try {
       const currentVolume = await voiceService.increaseVolume(interaction);
       const currentContent = interaction.message.content.split('\n')[0];
-      row.components[3]?.setDisabled(false);
+      radioRow.components[3]?.setDisabled(false);
       if (currentVolume! >= 1.5) {
-        row.components[4]?.setDisabled();
+        radioRow.components[4]?.setDisabled();
         return await interaction.update({
           content: `${currentContent} \nVolume atual: Max`,
-          components: [row],
+          components: [radioRow],
         });
       }
       return await interaction.update({
         content: `${currentContent} \nVolume atual: ${(currentVolume! * 100).toFixed(0)}%`,
-        components: [row],
+        components: [radioRow],
       });
     } catch (error) {
       console.error(error);
