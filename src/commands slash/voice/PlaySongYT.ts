@@ -1,6 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, SlashCommandBuilder } from 'discord.js';
 import { voiceService } from '../../services/VoiceService';
-import { playerRow } from '../../buttons/PlayerButtons';
 const YouTubeSearchApi = require('youtube-search-api');
 module.exports = {
   data: new SlashCommandBuilder()
@@ -28,8 +27,7 @@ module.exports = {
       const video = searchResults.items[0];
       const link = `https://www.youtube.com/watch?v=${video.id}`;
 
-      await voiceService.play(interaction, link, 'yt');
-      return await interaction.editReply({ content: `Tocando: [${video.title}](${link})`, components: [playerRow] });
+      await voiceService.play(interaction, link, 'yt', video.title, link);
     } catch (error) {
       console.error(error);
       return interaction.editReply({ content: 'Algo deu errado!', components: [] });

@@ -26,12 +26,14 @@ import {
 } from 'discord.js';
 import { spawn } from 'child_process';
 import ytdl from '@distube/ytdl-core';
+import { playerRow } from '../buttons/PlayerButtons';
 
 const adapters = new Map<string, any>();
 const trackedClients = new Set<Client>();
 const trackedShards = new Map<number, Set<string>>();
 const voiceConnections = new Map<string, any>();
 const voicePlayers = new Map<string, ReturnType<typeof createAudioPlayer>>();
+const musicQueues = new Map<string, { link: string; title: string }[]>();
 
 class VoiceService {
   private currentVolume: number = 1;
@@ -83,6 +85,22 @@ class VoiceService {
       voiceConnections.delete(interaction.guild.id);
       return;
     });
+  }
+
+  async handleQueue(interaction: any) {
+    const guildId = interaction.guild.id;
+    const queue = musicQueues.get(guildId);
+
+    if (queue && queue.length > 0) {
+      const nextSong = queue.shift();
+      if (nextSong) {
+        await this.play(interaction, nextSong.link, 'yt', nextSong.title);
+      }
+    } else {
+      const player = voicePlayers.get(guildId);
+      player?.stop();
+      await interaction.editReply('Fila de músicas vazia.');
+    }
   }
 
   async createDiscordJSAdapter(channel: VoiceBasedChannel): Promise<DiscordGatewayAdapterCreator> {
@@ -142,18 +160,28 @@ class VoiceService {
     return voiceConnection;
   }
 
-  async play(interaction: any, src: string, _type: string) {
+  async play(interaction: any, src: string, _type: string, title?: string, link?: string) {
+    const guildId = interaction.guild.id;
+
+    if (!musicQueues.has(guildId)) {
+      musicQueues.set(guildId, []);
+    }
+    const queue = musicQueues.get(guildId);
     let resource;
 
     const voiceConnection = await this.connect(interaction);
-    if (voiceConnection == null) return;
-
     const player = voicePlayers.get(interaction.guild.id);
-    if (!player) {
+
+    if (!player || !voiceConnection) {
       await interaction.editReply('Erro ao iniciar o player!');
       return;
     }
 
+    if (player.state.status === AudioPlayerStatus.Playing || queue!.length > 0) {
+      queue?.push({ link: src, title: title || 'Música Desconhecida' });
+      await interaction.editReply(`Adicionado à fila: ${title}`);
+      return;
+    }
     switch (_type) {
       case 'radio': {
         resource = createAudioResource(await this.startStream(player, src), {
@@ -173,12 +201,18 @@ class VoiceService {
             inputType: StreamType.Arbitrary,
             inlineVolume: true,
           });
+          resource!.volume!.setVolume(this.currentVolume);
+          player.play(resource!);
+          await interaction.editReply({ content: `Tocando: [${title}](${link})`, components: [playerRow] });
+          player?.on(AudioPlayerStatus.Idle, () => {
+            this.handleQueue(interaction);
+          });
+          return;
         } catch (error) {
           console.error('Erro ao obter o áudio do YouTube:', error);
           await interaction.editReply('Não foi possível reproduzir a música do YouTube.');
           return;
         }
-        break;
       }
     }
 
