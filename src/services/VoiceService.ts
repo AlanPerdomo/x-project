@@ -250,7 +250,6 @@ class VoiceService {
     const player = voicePlayers.get(interaction.guild.id);
 
     player!.stop();
-    // await this.handleQueue(interaction);
 
     return;
   }

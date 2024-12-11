@@ -3,10 +3,10 @@ import { riotAPIKey, region } from '../../config.json';
 
 class LolService {
   async getSummonerData(summonerName: string) {
-    console.log('region', region);
-    console.log('riotAPIKey', riotAPIKey);
-    console.log('summonerName', summonerName);
-    console.log(encodeURIComponent(summonerName));
+    // console.log('region', region);
+    // console.log('riotAPIKey', riotAPIKey);
+    // console.log('summonerName', summonerName);
+    // console.log(encodeURIComponent(summonerName));
     try {
       const response = await axios.get(
         `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURIComponent(summonerName)}`,

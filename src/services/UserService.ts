@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { apiUrl } from '../../config.json';
+import { apiUrl, botServiceToken } from '../../config.json';
 
 class UserService {
   async cadastrar(data: { email: any; name: any; discordId: any; username: any; password: string; type: string }) {
@@ -31,6 +31,25 @@ class UserService {
       })
       .catch((error: any) => {
         return Promise.reject(error);
+      });
+  }
+
+  async getUserToken(userId: string) {
+    return await axios({
+      url: `${apiUrl}/token/get-user-token`,
+      method: 'post',
+      timeout: 5000,
+      headers: { Accept: 'application/json' },
+      data: {
+        hash: botServiceToken,
+        discordId: userId,
+      },
+    })
+      .then(response => {
+        return response.data;
+      })
+      .catch(error => {
+        return error;
       });
   }
 }

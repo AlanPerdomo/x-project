@@ -1,9 +1,10 @@
 import axios from 'axios';
-import { apiUrl, botServiceToken } from '../../config.json';
+import { apiUrl } from '../../config.json';
+import { userService } from './UserService';
 
 class TcgService {
   async buscarDeck(userId: string) {
-    const token = (await getUserToken(userId)).access_token;
+    const token = (await userService.getUserToken(userId)).access_token;
 
     return await axios({
       url: `${apiUrl}/tcg/decks/my-deck`,
@@ -35,7 +36,7 @@ class TcgService {
   }
 
   async addCardToDeck(userId: string) {
-    const token = (await getUserToken(userId)).access_token;
+    const token = (await userService.getUserToken(userId)).access_token;
 
     return await axios({
       url: `${apiUrl}/tcg/decks/add-card`,
@@ -62,7 +63,7 @@ class TcgService {
       special_ability: string;
     },
   ) {
-    const token = (await getUserToken(userId)).access_token;
+    const token = (await userService.getUserToken(userId)).access_token;
 
     return await axios({
       url: `${apiUrl}/tcg/cards/create-card`,
@@ -78,25 +79,6 @@ class TcgService {
         return Promise.reject(error);
       });
   }
-}
-
-async function getUserToken(userId: string) {
-  return await axios({
-    url: `${apiUrl}/token/get-user-token`,
-    method: 'post',
-    timeout: 5000,
-    headers: { Accept: 'application/json' },
-    data: {
-      hash: botServiceToken,
-      discordId: userId,
-    },
-  })
-    .then(response => {
-      return response.data;
-    })
-    .catch(error => {
-      return error;
-    });
 }
 
 export const tcgService = new TcgService();
