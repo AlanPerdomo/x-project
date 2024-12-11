@@ -40,7 +40,7 @@ const next = new ButtonBuilder()
   .setLabel('Next')
   .setStyle(ButtonStyle.Secondary)
   .setEmoji('⏩')
-  .setDisabled(true);
+  .setDisabled(false);
 
 const previous = new ButtonBuilder()
   .setCustomId('previous')

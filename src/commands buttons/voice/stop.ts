@@ -4,7 +4,7 @@ module.exports = {
   customId: 'stop',
   async execute(interaction: any) {
     try {
-      await voiceService.stop(interaction);
+      await voiceService.stop(interaction.guild.id);
       return await interaction.update({ content: 'Parado com sucesso!', components: [] });
     } catch (error) {
       console.error(error);

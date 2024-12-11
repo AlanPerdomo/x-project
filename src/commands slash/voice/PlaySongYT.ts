@@ -26,7 +26,6 @@ module.exports = {
       }
       const video = searchResults.items[0];
       const link = `https://www.youtube.com/watch?v=${video.id}`;
-
       await voiceService.play(interaction, link, 'yt', video.title, link);
     } catch (error) {
       console.error(error);

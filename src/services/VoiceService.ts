@@ -99,7 +99,8 @@ class VoiceService {
     } else {
       const player = voicePlayers.get(guildId);
       player?.stop();
-      await interaction.editReply('Fila de músicas vazia.');
+      playerRow.components[4]?.setDisabled();
+      await interaction.editReply({ content: 'Fila de músicas vazia.', components: [playerRow] });
     }
   }
 
@@ -170,16 +171,20 @@ class VoiceService {
     let resource;
 
     const voiceConnection = await this.connect(interaction);
-    const player = voicePlayers.get(interaction.guild.id);
+    const player = voicePlayers.get(guildId);
 
     if (!player || !voiceConnection) {
       await interaction.editReply('Erro ao iniciar o player!');
       return;
     }
+    if (queue!.length == 0) {
+      playerRow.components[4]?.setDisabled();
+    }
 
     if (player.state.status === AudioPlayerStatus.Playing || queue!.length > 0) {
-      queue?.push({ link: src, title: title || 'Música Desconhecida' });
       await interaction.editReply(`Adicionado à fila: ${title}`);
+      queue?.push({ link: src, title: title || 'Música Desconhecida' });
+
       return;
     }
     switch (_type) {
@@ -203,11 +208,12 @@ class VoiceService {
           });
           resource!.volume!.setVolume(this.currentVolume);
           player.play(resource!);
+
           await interaction.editReply({ content: `Tocando: [${title}](${link})`, components: [playerRow] });
           player?.on(AudioPlayerStatus.Idle, () => {
             this.handleQueue(interaction);
           });
-          return;
+          return await entersState(player, AudioPlayerStatus.Playing, 5000);
         } catch (error) {
           console.error('Erro ao obter o áudio do YouTube:', error);
           await interaction.editReply('Não foi possível reproduzir a música do YouTube.');
@@ -239,14 +245,26 @@ class VoiceService {
     player.pause();
     return entersState(player, AudioPlayerStatus.Paused, 5000);
   }
-  async stop(interaction: any) {
-    const voiceConnection = voiceConnections.get(interaction.guild.id);
+
+  async next(interaction) {
     const player = voicePlayers.get(interaction.guild.id);
+
+    player!.stop();
+    // await this.handleQueue(interaction);
+
+    return;
+  }
+  async stop(guildId: string) {
+    const voiceConnection = voiceConnections.get(guildId);
+    const player = voicePlayers.get(guildId);
+    const queue = musicQueues.get(guildId);
     if (!voiceConnection) return;
     if (!player) return;
+    queue!.length = 0;
+
     player.stop();
+
     await voiceConnection.disconnect();
-    return entersState(player, AudioPlayerStatus.Idle, 5000);
   }
 
   async startStream(player: AudioPlayer, url: string) {
