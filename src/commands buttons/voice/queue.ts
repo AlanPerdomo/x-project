@@ -1,8 +1,8 @@
 import { voiceService } from '../../services/VoiceService';
 
 module.exports = {
-  customId: 'stop',
+  customId: 'queue',
   async execute(interaction: any) {
-    await voiceService.stop(interaction);
+    await voiceService.getQueue(interaction);
   },
 };

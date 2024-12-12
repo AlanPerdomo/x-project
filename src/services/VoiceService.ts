@@ -21,12 +21,12 @@ import {
   GatewayVoiceServerUpdateDispatchData,
   GatewayVoiceStateUpdateDispatchData,
   Status,
-  ButtonInteraction,
-  CacheType,
+  // ButtonInteraction,
+  // CacheType,
 } from 'discord.js';
 import { spawn } from 'child_process';
 import ytdl from '@distube/ytdl-core';
-import { playerRow } from '../buttons/PlayerButtons';
+import { playerRow, radioRow } from '../buttons/PlayerButtons';
 
 const adapters = new Map<string, any>();
 const trackedClients = new Set<Client>();
@@ -34,6 +34,7 @@ const trackedShards = new Map<number, Set<string>>();
 const voiceConnections = new Map<string, any>();
 const voicePlayers = new Map<string, ReturnType<typeof createAudioPlayer>>();
 const musicQueues = new Map<string, { link: string; title: string }[]>();
+const initialInteractions = new Map();
 
 class VoiceService {
   private currentVolume: number = 1;
@@ -104,6 +105,17 @@ class VoiceService {
     }
   }
 
+  async getQueue(interaction: any) {
+    const queue = musicQueues.get(interaction.guild.id);
+
+    if (queue && queue.length > 0) {
+      const queueString = queue.map((song, index) => `${index + 1}. ${song.title}`).join('\n');
+      await interaction.editReply({ content: `Fila de músicas:\n${queueString}`, components: [playerRow] });
+    } else {
+      await interaction.editReply({ content: 'Fila de musiqueas vazia.', components: [playerRow] });
+    }
+  }
+
   async createDiscordJSAdapter(channel: VoiceBasedChannel): Promise<DiscordGatewayAdapterCreator> {
     return methods => {
       adapters.set(channel.guild.id, methods);
@@ -163,6 +175,10 @@ class VoiceService {
 
   async play(interaction: any, src: string, _type: string, title?: string, link?: string) {
     const guildId = interaction.guild.id;
+    if (!initialInteractions.has(guildId)) {
+      initialInteractions.set(guildId, interaction);
+    }
+    const initialInteraction = initialInteractions.get(guildId);
 
     if (!musicQueues.has(guildId)) {
       musicQueues.set(guildId, []);
@@ -209,7 +225,7 @@ class VoiceService {
           resource!.volume!.setVolume(this.currentVolume);
           player.play(resource!);
 
-          await interaction.editReply({ content: `Tocando: [${title}](${link})`, components: [playerRow] });
+          await initialInteraction.editReply({ content: `Tocando: [${title}](${link})`, components: [playerRow] });
           player?.on(AudioPlayerStatus.Idle, () => {
             this.handleQueue(interaction);
           });
@@ -228,42 +244,91 @@ class VoiceService {
     return entersState(player, AudioPlayerStatus.Playing, 5000);
   }
 
-  async resume(interaction: { guild: { id: string } }) {
+  async resume(interaction: {
+    guild: { id: string };
+    message: { content: string; components: { components: { data: { custom_id: string } }[] }[] };
+    update: any;
+  }) {
     const voiceConnection = voiceConnections.get(interaction.guild.id);
     const player = voicePlayers.get(interaction.guild.id);
-    if (!voiceConnection) return;
-    if (!player) return;
-    player.unpause();
-    return entersState(player, AudioPlayerStatus.Playing, 5000);
+    try {
+      const currentContent = interaction.message.content.split(' ')[0];
+      let row: any = [];
+      if (interaction.message.components[0]?.components[3]?.data.custom_id === 'volume-down') {
+        row = radioRow;
+      } else if (interaction.message.components[0]?.components[3]?.data.custom_id === 'previous') {
+        row = playerRow;
+      }
+
+      row.components[0]?.setDisabled();
+      row.components[1]?.setDisabled(false);
+      row.components[2]?.setDisabled(false);
+      if (!voiceConnection) return;
+      if (!player) return;
+      player.unpause();
+      entersState(player, AudioPlayerStatus.Playing, 5000);
+      return await interaction.update({ content: `Tocando! ${currentContent}.`, components: [row] });
+    } catch (error) {
+      console.error(error);
+      return interaction.update({ content: 'Algo deu errado ao tentar tocar!' });
+    }
   }
 
-  async pause(interaction: { guild: { id: string }; update: (arg0: string) => any }) {
+  async pause(interaction: {
+    guild: { id: string };
+    message: { content: string; components: { components: { data: { custom_id: string } }[] }[] };
+    update: any;
+  }) {
     const voiceConnection = voiceConnections.get(interaction.guild.id);
     const player = voicePlayers.get(interaction.guild.id);
+    const currentContent = interaction.message.content!;
+    try {
+      let row: any = [];
+      if (interaction.message.components[0]?.components[3]?.data.custom_id === 'volume-down') {
+        row = radioRow;
+      } else if (interaction.message.components[0]?.components[3]?.data.custom_id === 'previous') {
+        row = playerRow;
+      }
+
+      row.components[0]?.setDisabled(false);
+      row.components[1]?.setDisabled();
+      row.components[2]?.setDisabled();
+      await interaction.update({ content: `${currentContent} Pausado com sucesso!`, components: [row] });
+    } catch (error) {
+      console.error(error);
+      return interaction.update({ content: 'Algo deu errado ao tentar pausar!' });
+    }
     if (!voiceConnection) return;
     if (!player) return;
     player.pause();
     return entersState(player, AudioPlayerStatus.Paused, 5000);
   }
 
-  async next(interaction) {
+  async next(interaction: { guild: { id: string } }) {
     const player = voicePlayers.get(interaction.guild.id);
 
     player!.stop();
 
     return;
   }
-  async stop(guildId: string) {
-    const voiceConnection = voiceConnections.get(guildId);
-    const player = voicePlayers.get(guildId);
-    const queue = musicQueues.get(guildId);
+  async stop(interaction: { guild: { id: string }; update: any }) {
+    const voiceConnection = voiceConnections.get(interaction.guild.id);
+    const player = voicePlayers.get(interaction.guild.id);
+    const queue = musicQueues.get(interaction.guild.id);
     if (!voiceConnection) return;
     if (!player) return;
-    queue!.length = 0;
+    try {
+      queue!.length = 0;
+      initialInteractions.delete(interaction.guild.id);
 
-    player.stop();
+      player.stop();
 
-    await voiceConnection.disconnect();
+      await voiceConnection.disconnect();
+      return await interaction.update({ content: 'Parado com sucesso!', components: [] });
+    } catch (error) {
+      console.error(error);
+      return interaction.update('Algo deu errado ao tentar parar!');
+    }
   }
 
   async startStream(player: AudioPlayer, url: string) {
@@ -286,7 +351,7 @@ class VoiceService {
     return ffmpeg.stdout;
   }
 
-  async setVolume(newVolume: number, interaction: ButtonInteraction<CacheType>) {
+  async setVolume(newVolume: number, interaction: { guild: { id: string; name: string } }) {
     this.currentVolume = Math.max(0.0, Math.min(newVolume, 1.5));
     const player = voicePlayers.get(interaction.guild!.id);
     console.log(`Volume atual: ${(this.currentVolume * 100).toFixed(0)}% no servidor ${interaction.guild?.name}`);
@@ -296,23 +361,47 @@ class VoiceService {
     }
   }
 
-  async increaseVolume(interaction: ButtonInteraction<CacheType>, step: number = 0.1) {
+  async increaseVolume(interaction: any, step: number = 0.1) {
+    const currentContent = interaction.message.content.split('\n')[0];
+    radioRow.components[3]?.setDisabled(false);
     try {
       this.setVolume(this.currentVolume + step, interaction);
-      return voiceService.currentVolume;
+      if (this.currentVolume >= 1.5) {
+        radioRow.components[4]?.setDisabled();
+        return await interaction.update({
+          content: `${currentContent} \nVolume atual: Max`,
+          components: [radioRow],
+        });
+      }
+      return await interaction.update({
+        content: `${currentContent} \nVolume atual: ${(this.currentVolume * 100).toFixed(0)}%`,
+        components: [radioRow],
+      });
     } catch (error) {
-      console.log(error);
-      return this.currentVolume;
+      console.error(error);
+      return interaction.update('Algo deu errado ao tentar aumentar o volume!');
     }
   }
 
-  async decreaseVolume(interaction: ButtonInteraction<CacheType>, step: number = 0.1) {
+  async decreaseVolume(interaction: any, step: number = 0.1) {
+    const currentContent = interaction.message.content.split('\n')[0];
+    radioRow.components[4]?.setDisabled(false);
     try {
       this.setVolume(this.currentVolume - step, interaction);
-      return voiceService.currentVolume;
+      if (this.currentVolume <= 0) {
+        radioRow.components[3]?.setDisabled();
+        return await interaction.update({
+          content: `${currentContent} \nVolume atual: Min`,
+          components: [radioRow],
+        });
+      }
+      return await interaction.update({
+        content: `${currentContent} \nVolume atual: ${(this.currentVolume! * 100).toFixed(0)}%`,
+        components: [radioRow],
+      });
     } catch (error) {
-      console.log(error);
-      return this.currentVolume;
+      console.error(error);
+      return interaction.update('Algo deu errado ao tentar diminuir o volume!');
     }
   }
 

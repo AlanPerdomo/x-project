@@ -6,12 +6,17 @@ module.exports = {
     .addChannelOption(option =>
       option.setName('channel').setDescription('O canal de texto onde deseja deletar as mensagens').setRequired(true),
     ),
-  async execute(interaction: { options: { getChannel: (arg0: string) => any }; reply: (arg0: string) => any }) {
+  async execute(interaction: {
+    options: { getChannel: (arg0: string) => any };
+    reply: (arg0: string) => any;
+    deferReply: () => any;
+  }) {
     const channel = interaction.options.getChannel('channel');
     if (!channel.isTextBased()) {
       return interaction.reply('Por favor, escolha um canal de texto.');
     }
 
+    await interaction.deferReply();
     if (channel.name === 'heimer-bot-test' || channel.name === 'heimer') {
       try {
         // Buscar mensagens no canal.
@@ -21,19 +26,19 @@ module.exports = {
         );
 
         if (messagesToDelete.size === 0) {
-          return interaction.reply('Neh, nenhuma mensagem para deletar.');
+          // return interaction.reply('Neh, nenhuma mensagem para deletar.');
         }
 
         // Deletar mensagens em massa.
         await channel.bulkDelete(messagesToDelete);
 
-        await interaction.reply(` ${messagesToDelete.size} mensagem(s) deletada(s).`);
+        // await interaction.reply(` ${messagesToDelete.size} mensagem(s) deletada(s).`);
       } catch (error) {
         console.error(error);
-        await interaction.reply('Houve um erro ao deletar as mensagens.');
+        // await interaction.reply('Houve um erro ao deletar as mensagens.');
       }
     } else {
-      await interaction.reply('Você so pode deletar mensagens no "heimer-bot-test" ou "heimer".');
+      // await interaction.reply('Você so pode deletar mensagens no "heimer-bot-test" ou "heimer".');
     }
   },
 };
