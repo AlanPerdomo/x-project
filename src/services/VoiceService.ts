@@ -37,7 +37,7 @@ const musicQueues = new Map<string, { link: string; title: string }[]>();
 const initialInteractions = new Map();
 
 class VoiceService {
-  private currentVolume: number = 1;
+  private currentVolume: number = 0.1;
 
   async trackClient(client: Client) {
     if (trackedClients.has(client)) return;
@@ -110,9 +110,9 @@ class VoiceService {
 
     if (queue && queue.length > 0) {
       const queueString = queue.map((song, index) => `${index + 1}. ${song.title}`).join('\n');
-      await interaction.editReply({ content: `Fila de músicas:\n${queueString}`, components: [playerRow] });
+      await interaction.update({ content: `Fila de musiqueas:\n${queueString}`, components: [playerRow] });
     } else {
-      await interaction.editReply({ content: 'Fila de musiqueas vazia.', components: [playerRow] });
+      await interaction.update({ content: 'Fila de musiqueas vazia.' });
     }
   }
 
@@ -136,18 +136,22 @@ class VoiceService {
     };
   }
 
-  async connect(interaction: any, deaf = true, mute = false) {
+  async connect(interaction: { member: any; guild: any; editReply: any }, deaf = true, mute = false) {
     const channel = interaction.member.voice.channel;
-    let voiceConnection = voiceConnections.get(interaction.guild.id);
+    const guildId = interaction.guild.id;
+    if (!initialInteractions.has(guildId)) {
+      initialInteractions.set(guildId, interaction);
+    }
+    let voiceConnection = voiceConnections.get(guildId);
     if (!channel) {
       await interaction.editReply('Você não está em um canal de voz!');
-      return null;
+      return;
     }
 
     if (!voiceConnection) {
       voiceConnection = joinVoiceChannel({
         channelId: interaction.member.voice.channelId,
-        guildId: interaction.guild.id,
+        guildId: guildId,
         adapterCreator: await this.createDiscordJSAdapter(channel),
         selfDeaf: deaf,
         selfMute: mute,
@@ -162,11 +166,11 @@ class VoiceService {
             noSubscriber: NoSubscriberBehavior.Play,
           },
         });
-        voicePlayers.set(interaction.guild.id, player);
+        voicePlayers.set(guildId, player);
         voiceConnection.subscribe(player);
       } catch (error) {
         voiceConnection.destroy();
-        voiceConnections.delete(interaction.guild.id);
+        voiceConnections.delete(guildId);
         throw error;
       }
     }
@@ -175,10 +179,9 @@ class VoiceService {
 
   async play(interaction: any, src: string, _type: string, title?: string, link?: string) {
     const guildId = interaction.guild.id;
-    if (!initialInteractions.has(guildId)) {
-      initialInteractions.set(guildId, interaction);
-    }
-    const initialInteraction = initialInteractions.get(guildId);
+
+    // const initialInteraction = initialInteractions.get(guildId);
+    // console.log('initialInteraction', initialInteraction);
 
     if (!musicQueues.has(guildId)) {
       musicQueues.set(guildId, []);
@@ -225,7 +228,7 @@ class VoiceService {
           resource!.volume!.setVolume(this.currentVolume);
           player.play(resource!);
 
-          await initialInteraction.editReply({ content: `Tocando: [${title}](${link})`, components: [playerRow] });
+          await interaction.editReply({ content: `Tocando: [${title}](${link})`, components: [playerRow] });
           player?.on(AudioPlayerStatus.Idle, () => {
             this.handleQueue(interaction);
           });
@@ -256,7 +259,7 @@ class VoiceService {
       let row: any = [];
       if (interaction.message.components[0]?.components[3]?.data.custom_id === 'volume-down') {
         row = radioRow;
-      } else if (interaction.message.components[0]?.components[3]?.data.custom_id === 'previous') {
+      } else if (interaction.message.components[0]?.components[3]?.data.custom_id === 'queue') {
         row = playerRow;
       }
 
@@ -286,7 +289,7 @@ class VoiceService {
       let row: any = [];
       if (interaction.message.components[0]?.components[3]?.data.custom_id === 'volume-down') {
         row = radioRow;
-      } else if (interaction.message.components[0]?.components[3]?.data.custom_id === 'previous') {
+      } else if (interaction.message.components[0]?.components[3]?.data.custom_id === 'queue') {
         row = playerRow;
       }
 

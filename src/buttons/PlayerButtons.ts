@@ -49,7 +49,14 @@ const previous = new ButtonBuilder()
   .setEmoji('⏪')
   .setDisabled(true);
 
-const playerRow = new ActionRowBuilder<ButtonBuilder>().addComponents(play, pause, stop, previous, next);
+const queue = new ButtonBuilder()
+  .setCustomId('queue')
+  .setLabel('Queue')
+  .setStyle(ButtonStyle.Secondary)
+  .setEmoji('📜')
+  .setDisabled(false);
+
+const playerRow = new ActionRowBuilder<ButtonBuilder>().addComponents(play, pause, stop, queue, next);
 
 const radioRow = new ActionRowBuilder<ButtonBuilder>().addComponents(play, pause, stop, volumeDown, volumeUp);
 
