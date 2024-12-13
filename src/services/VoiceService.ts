@@ -35,6 +35,7 @@ const voiceConnections = new Map<string, any>();
 const voicePlayers = new Map<string, ReturnType<typeof createAudioPlayer>>();
 const musicQueues = new Map<string, { link: string; title: string }[]>();
 const initialInteractions = new Map();
+const playingNow = new Map();
 
 class VoiceService {
   private currentVolume: number = 0.1;
@@ -101,7 +102,7 @@ class VoiceService {
       const player = voicePlayers.get(guildId);
       player?.stop();
       playerRow.components[4]?.setDisabled();
-      await interaction.editReply({ content: 'Fila de músicas vazia.', components: [playerRow] });
+      await interaction.editReply({ content: 'Fila de músicas vazia.', components: [] });
     }
   }
 
@@ -109,10 +110,15 @@ class VoiceService {
     const queue = musicQueues.get(interaction.guild.id);
 
     if (queue && queue.length > 0) {
-      const queueString = queue.map((song, index) => `${index + 1}. ${song.title}`).join('\n');
-      await interaction.update({ content: `Fila de musiqueas:\n${queueString}`, components: [playerRow] });
+      const queueString = queue.map((song, index) => `**${index + 1}.** ${song.title}`).join('\n');
+      await interaction.update({
+        content: `**Tocando:** ${playingNow.get(interaction.guild.id)}\n**Fila de musicas:**\n${queueString}`,
+        components: [playerRow],
+      });
     } else {
-      await interaction.update({ content: 'Fila de musiqueas vazia.' });
+      await interaction.update({
+        content: `**Tocando:** ${playingNow.get(interaction.guild.id)}\nFila de musicas vazia.`,
+      });
     }
   }
 
@@ -180,9 +186,6 @@ class VoiceService {
   async play(interaction: any, src: string, _type: string, title?: string, link?: string) {
     const guildId = interaction.guild.id;
 
-    // const initialInteraction = initialInteractions.get(guildId);
-    // console.log('initialInteraction', initialInteraction);
-
     if (!musicQueues.has(guildId)) {
       musicQueues.set(guildId, []);
     }
@@ -201,7 +204,7 @@ class VoiceService {
     }
 
     if (player.state.status === AudioPlayerStatus.Playing || queue!.length > 0) {
-      await interaction.editReply(`Adicionado à fila: ${title}`);
+      await interaction.editReply(`**Adicionado à fila:** ${title}`);
       queue?.push({ link: src, title: title || 'Música Desconhecida' });
 
       return;
@@ -228,7 +231,17 @@ class VoiceService {
           resource!.volume!.setVolume(this.currentVolume);
           player.play(resource!);
 
-          await interaction.editReply({ content: `Tocando: [${title}](${link})`, components: [playerRow] });
+          playingNow.set(guildId, `[${title}](${link})`);
+          console.log(playingNow.get(guildId));
+
+          try {
+            await interaction.editReply({ content: `**Tocando:** [${title}](${link})`, components: [playerRow] });
+            console.log('editReply');
+          } catch (error) {
+            await interaction.update({ content: `**Tocando:** [${title}](${link})`, components: [playerRow] });
+            console.log('update');
+          }
+
           player?.on(AudioPlayerStatus.Idle, () => {
             this.handleQueue(interaction);
           });
@@ -255,7 +268,6 @@ class VoiceService {
     const voiceConnection = voiceConnections.get(interaction.guild.id);
     const player = voicePlayers.get(interaction.guild.id);
     try {
-      const currentContent = interaction.message.content.split(' ')[0];
       let row: any = [];
       if (interaction.message.components[0]?.components[3]?.data.custom_id === 'volume-down') {
         row = radioRow;
@@ -270,7 +282,8 @@ class VoiceService {
       if (!player) return;
       player.unpause();
       entersState(player, AudioPlayerStatus.Playing, 5000);
-      return await interaction.update({ content: `Tocando! ${currentContent}.`, components: [row] });
+      const playing = playingNow.get(interaction.guild.id);
+      return await interaction.update({ content: `**Tocando:** ${playing}`, components: [row] });
     } catch (error) {
       console.error(error);
       return interaction.update({ content: 'Algo deu errado ao tentar tocar!' });
@@ -284,7 +297,7 @@ class VoiceService {
   }) {
     const voiceConnection = voiceConnections.get(interaction.guild.id);
     const player = voicePlayers.get(interaction.guild.id);
-    const currentContent = interaction.message.content!;
+
     try {
       let row: any = [];
       if (interaction.message.components[0]?.components[3]?.data.custom_id === 'volume-down') {
@@ -296,7 +309,8 @@ class VoiceService {
       row.components[0]?.setDisabled(false);
       row.components[1]?.setDisabled();
       row.components[2]?.setDisabled();
-      await interaction.update({ content: `${currentContent} Pausado com sucesso!`, components: [row] });
+      const playing = playingNow.get(interaction.guild.id);
+      await interaction.update({ content: `${playing} Pausado com sucesso!`, components: [row] });
     } catch (error) {
       console.error(error);
       return interaction.update({ content: 'Algo deu errado ao tentar pausar!' });
