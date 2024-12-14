@@ -422,6 +422,8 @@ class VoiceService {
     }
   }
 
+  async record(interaction: any) {}
+
   async disconnect(interaction: any) {
     const guildId = interaction.guild.id;
     const voiceConnection = voiceConnections.get(guildId);
