@@ -66,6 +66,7 @@ No momento, os seguintes comandos estão disponíveis:
 
 - `/perola`: registra a perola enviada no banco de dados.
 - `/novo-usuario`: Registra um email e libera uma senha para o usuário.
+- `/radio`: conecta no chat de voz e reproduz a radio. 
 - Outros comandos (em desenvolvimento).
 
 Para visualizar todos os comandos, digite `/help` no canal onde o bot está presente.
