@@ -2,21 +2,18 @@ import axios from 'axios';
 import { riotAPIKey, region } from '../../config.json';
 
 class LolService {
-  async getSummonerData(summonerName: string) {
-    // console.log('region', region);
-    // console.log('riotAPIKey', riotAPIKey);
-    // console.log('summonerName', summonerName);
-    // console.log(encodeURIComponent(summonerName));
+  async getSummonerData(interaction: any, tag: string, summonerName: string) {
+    interaction.deferReply();
     try {
       const response = await axios.get(
-        `https://${region}.api.riotgames.com/lol/summoner/v4/summoners/by-name/${encodeURIComponent(summonerName)}`,
-        { headers: { 'X-Riot-Token': riotAPIKey } },
+        `https://${region}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${summonerName}/${tag}?api_key=${riotAPIKey}`,
       );
 
-      //   console.log('Dados do Invocador:', response.data);
-      return response.data;
+      await interaction.editReply(`${response.data}`);
+      console.log(response.data);
     } catch (error) {
-      //   console.error('Erro:', error);
+      await interaction.editReply('Algo deu errado!');
+      console.log('try update API Key');
     }
   }
 }
