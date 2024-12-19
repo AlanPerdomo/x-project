@@ -11,6 +11,6 @@ module.exports = {
   async execute(interaction: any) {
     const tag = interaction.options.getString('tag');
     const summonerName = interaction.options.getString('summoner-name');
-    await lolService.getSummonerPuuid(tag, summonerName);
+    await lolService.getMatchHistory(interaction, summonerName, tag);
   },
 };

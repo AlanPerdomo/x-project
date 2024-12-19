@@ -4,23 +4,22 @@ import { riotAPIKey, region, LOLserver } from '../../config.json';
 class LolService {
   endpoints = {
     summonerByName: (region: any, summonerName: any, tag: any) =>
-      `https://${region}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${summonerName}/${tag}`,
+      `https://${region}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${summonerName}/${tag}?`,
     masteryByPuuid: (LOLserver: any, puuid: any, count: any) =>
-      `https://${LOLserver}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}/top?count=${count}`,
+      `https://${LOLserver}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}/top?count=${count}?`,
     activeGameBySummoner: (LOLserver: any, puuid: any) =>
-      `https://${LOLserver}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/${puuid}`,
-    matchHistory: (LOLserver: any, puuid: any, count: any) =>
-      `https://${LOLserver}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}`,
-    matchDetails: (LOLserver: any, matchId: any) =>
-      `https://${LOLserver}.api.riotgames.com/lol/match/v5/matches/${matchId}`,
+      `https://${LOLserver}.api.riotgames.com/lol/spectator/v5/active-games/by-summoner/${puuid}?`,
+    matchHistory: (region: any, puuid: any, count: any) =>
+      `https://${region}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}&`,
+    matchDetails: (region: any, matchId: any) => `https://${region}.api.riotgames.com/lol/match/v5/matches/${matchId}?`,
   };
 
   async fetchFromRiotAPI(url: string) {
     try {
-      const response = await axios.get(`${url}?api_key=${riotAPIKey}`);
+      const response = await axios.get(`${url}api_key=${riotAPIKey}`);
       return response.data;
     } catch (error) {
-      console.error('Erro na chamada da API:', error.response?.data || error.message);
+      console.error('Erro na chamada da API:', error);
       throw error;
     }
   }
@@ -106,19 +105,19 @@ class LolService {
         return await interaction.editReply('PUUID não encontrado.');
       }
 
-      const urlHistory = this.endpoints.matchHistory(LOLserver, puuid, count);
+      const urlHistory = this.endpoints.matchHistory(region, puuid, count);
       const matchIds = await this.fetchFromRiotAPI(urlHistory);
+      console.log(matchIds);
 
       const matches = await Promise.all(
         matchIds.map(async (matchId: any) => {
-          const urlDetails = this.endpoints.matchDetails(LOLserver, matchId);
+          const urlDetails = this.endpoints.matchDetails(region, matchId);
           return await this.fetchFromRiotAPI(urlDetails);
         }),
       );
 
-      const matchSummaries = matches
-        .map(match => `Jogo: ${match.metadata.matchId}, Modo: ${match.info.gameMode}`)
-        .join('\n');
+      const matchSummaries = matches.map(match => `Jogo: ${match.info}, Modo: ${match.info.gameMode}`).join('\n');
+      console.log(matches[0].info.teams[0].objectives);
 
       await interaction.editReply(`Histórico de partidas:\n${matchSummaries}`);
     } catch (error) {
