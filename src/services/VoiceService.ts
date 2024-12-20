@@ -422,7 +422,9 @@ class VoiceService {
     }
   }
 
-  async record(interaction: any) {}
+  async record(interaction: any) {
+    console.log(interaction);
+  }
 
   async disconnect(interaction: any) {
     const guildId = interaction.guild.id;

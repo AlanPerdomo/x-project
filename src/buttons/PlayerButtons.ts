@@ -42,12 +42,12 @@ const next = new ButtonBuilder()
   .setEmoji('⏩')
   .setDisabled(false);
 
-const previous = new ButtonBuilder()
-  .setCustomId('previous')
-  .setLabel('Previous')
-  .setStyle(ButtonStyle.Secondary)
-  .setEmoji('⏪')
-  .setDisabled(true);
+// const previous = new ButtonBuilder()
+//   .setCustomId('previous')
+//   .setLabel('Previous')
+//   .setStyle(ButtonStyle.Secondary)
+//   .setEmoji('⏪')
+//   .setDisabled(true);
 
 const queue = new ButtonBuilder()
   .setCustomId('queue')
