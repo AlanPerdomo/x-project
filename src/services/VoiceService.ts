@@ -11,6 +11,7 @@ import {
   DiscordGatewayAdapterCreator,
   AudioPlayerPlayingState,
   AudioPlayer,
+  EndBehaviorType,
 } from '@discordjs/voice';
 import {
   Client,
@@ -27,7 +28,10 @@ import {
 import { spawn } from 'child_process';
 import ytdl from '@distube/ytdl-core';
 import { playerRow, radioRow } from '../buttons/PlayerButtons';
+import { createWriteStream } from 'fs';
+import { pipeline } from 'stream';
 
+const ffmpeg = require('fluent-ffmpeg');
 const adapters = new Map<string, any>();
 const trackedClients = new Set<Client>();
 const trackedShards = new Map<number, Set<string>>();
@@ -422,7 +426,50 @@ class VoiceService {
     }
   }
 
-  async record(interaction: any) {}
+  async record(interaction: any) {
+    const voiceConnection = voiceConnections.get(interaction.guild.id);
+    if (!voiceConnection) {
+      await voiceService.connect(interaction, false, true);
+    }
+    voiceConnection.selfDeaf = false;
+    voiceConnection.selfMute = true;
+
+    const receiver = voiceConnection.receiver;
+
+    const opusStream = receiver.subscribe(voiceConnection, {
+      end: {
+        behavior: EndBehaviorType.AfterSilence,
+        duration: 20000,
+      },
+    });
+
+    const filename = `./audio/${Date.now()}.ogg`;
+    const tempFile = `./audio/${Date.now()}.opus`;
+
+    const tempOut = createWriteStream(tempFile);
+    pipeline(opusStream, tempOut, err => {
+      if (err) {
+        console.warn(`❌ Erro ao salvar arquivo OPUS temporário - ${err.message}`);
+      } else {
+        console.log(`✅ Arquivo OPUS gravado temporariamente: ${tempFile}`);
+        // Converte o arquivo OPUS para OGG
+        convertOpusToOgg(tempFile, filename);
+      }
+    });
+    function convertOpusToOgg(input: string, output: string) {
+      ffmpeg(input)
+        .inputFormat('opus')
+        .toFormat('ogg')
+        .output(output)
+        .on('end', () => {
+          console.log(`✅ Conversão para OGG concluída: ${output}`);
+        })
+        .on('error', (err: { message: any }) => {
+          console.warn(`❌ Erro ao converter para OGG - ${err.message}`);
+        })
+        .run();
+    }
+  }
 
   async disconnect(interaction: any) {
     const guildId = interaction.guild.id;
