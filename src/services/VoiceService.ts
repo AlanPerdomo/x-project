@@ -12,6 +12,7 @@ import {
   AudioPlayerPlayingState,
   AudioPlayer,
   EndBehaviorType,
+  VoiceReceiver,
 } from '@discordjs/voice';
 import {
   Client,
@@ -22,16 +23,17 @@ import {
   GatewayVoiceServerUpdateDispatchData,
   GatewayVoiceStateUpdateDispatchData,
   Status,
-  // ButtonInteraction,
-  // CacheType,
+  User,
 } from 'discord.js';
 import { spawn } from 'child_process';
 import ytdl from '@distube/ytdl-core';
 import { playerRow, radioRow } from '../buttons/PlayerButtons';
-import { createWriteStream } from 'fs';
 import { pipeline } from 'stream';
 
-const ffmpeg = require('fluent-ffmpeg');
+const fs = require('node:fs');
+const path = require('node:path');
+const prism = require('prism-media');
+// const ffmpeg = require('fluent-ffmpeg');
 const adapters = new Map<string, any>();
 const trackedClients = new Set<Client>();
 const trackedShards = new Map<number, Set<string>>();
@@ -43,6 +45,9 @@ const playingNow = new Map();
 
 class VoiceService {
   private currentVolume: number = 0.1;
+  async getDisplayName(userId: string, user?: User) {
+    return user ? `${user.id}_${user.username}` : userId;
+  }
 
   async trackClient(client: Client) {
     if (trackedClients.has(client)) return;
@@ -424,47 +429,76 @@ class VoiceService {
   }
 
   async record(interaction: any) {
-    const voiceConnection = voiceConnections.get(interaction.guild.id);
-    if (!voiceConnection) {
-      await voiceService.connect(interaction, false, true);
-    }
-    voiceConnection.selfDeaf = false;
-    voiceConnection.selfMute = true;
+    const recordingsDir = path.resolve(__dirname, '../../../x-project/recordings/');
 
+    if (!fs.existsSync(recordingsDir)) {
+      fs.mkdirSync(recordingsDir, { recursive: true });
+    }
+
+    const voiceConnection =
+      (await voiceConnections.get(interaction.guild.id)) || (await voiceService.connect(interaction, false, true));
+    voiceConnection.selfDeaf = false;
     const receiver = voiceConnection.receiver;
 
-    const opusStream = receiver.subscribe(voiceConnection, {
-      end: {
-        behavior: EndBehaviorType.AfterSilence,
-        duration: 20000,
-      },
-    });
+    const userId = interaction.user.id;
+    const displayName = await this.getDisplayName(userId, interaction.user);
+    const filename = `${recordingsDir}/${Date.now()}-${displayName}.ogg`;
 
-    const filename = `./audio/${Date.now()}.ogg`;
-    const tempFile = `./audio/${Date.now()}.opus`;
+    try {
+      // Stream de áudio do usuário
+      const opusStream = receiver.subscribe(userId, {
+        end: {
+          behavior: EndBehaviorType.AfterSilence,
+          duration: 1000,
+        },
+      });
 
-    const tempOut = createWriteStream(tempFile);
-    pipeline(opusStream, tempOut, err => {
-      if (err) {
-        console.warn(`❌ Erro ao salvar arquivo OPUS temporário - ${err.message}`);
-      } else {
-        console.log(`✅ Arquivo OPUS gravado temporariamente: ${tempFile}`);
-        // Converte o arquivo OPUS para OGG
-        convertOpusToOgg(tempFile, filename);
+      // Verificar se o stream está sendo capturado corretamente
+      if (!opusStream) {
+        console.error('❌ Failed to capture audio stream.');
+        return;
       }
-    });
-    function convertOpusToOgg(input: string, output: string) {
-      ffmpeg(input)
-        .inputFormat('opus')
-        .toFormat('ogg')
-        .output(output)
-        .on('end', () => {
-          console.log(`✅ Conversão para OGG concluída: ${output}`);
-        })
-        .on('error', (err: { message: any }) => {
-          console.warn(`❌ Erro ao converter para OGG - ${err.message}`);
-        })
-        .run();
+
+      // Decodificar áudio Opus para PCM
+      const pcmStream = new prism.opus.Decoder({
+        frameSize: 960, // Tamanho do frame
+        sampleRate: 48000, // Taxa de amostragem padrão do Discord (48 kHz)
+        channels: 2, // Dois canais (estéreo)
+      });
+
+      // Usar ffmpeg para converter PCM em OGG
+      const ffmpeg = spawn('ffmpeg', [
+        '-f',
+        's16le', // Formato de entrada PCM
+        '-ar',
+        '48000', // Taxa de amostragem (48 kHz)
+        '-ac',
+        '2', // Número de canais
+        '-i',
+        'pipe:0', // Entrada padrão
+        '-c:a',
+        'libopus', // Codec Opus
+        '-b:a',
+        '128k', // Taxa de bits
+        filename, // Arquivo de saída
+      ]);
+
+      // Conectar streams
+      pipeline(opusStream, pcmStream, ffmpeg.stdin, err => {
+        if (err) {
+          console.error(`❌ Error during recording pipeline: ${err.message}`);
+        } else {
+          console.log(`✅ Recorded ${filename}`);
+        }
+      });
+
+      ffmpeg.on('close', code => {
+        if (code !== 0) {
+          console.error(`❌ ffmpeg process exited with code ${code}`);
+        }
+      });
+    } catch (error) {
+      console.error(`❌ Error during recording: ${error}`);
     }
   }
 
