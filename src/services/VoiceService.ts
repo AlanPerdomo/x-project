@@ -236,14 +236,11 @@ class VoiceService {
           player.play(resource!);
 
           playingNow.set(guildId, `[${title}](${link})`);
-          console.log(playingNow.get(guildId));
 
           try {
             await interaction.editReply({ content: `**Tocando:** [${title}](${link})`, components: [playerRow] });
-            console.log('editReply');
           } catch (error) {
             await interaction.update({ content: `**Tocando:** [${title}](${link})`, components: [playerRow] });
-            console.log('update');
           }
 
           player?.on(AudioPlayerStatus.Idle, () => {
