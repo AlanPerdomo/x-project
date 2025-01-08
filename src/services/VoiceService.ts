@@ -12,7 +12,6 @@ import {
   AudioPlayerPlayingState,
   AudioPlayer,
   EndBehaviorType,
-  VoiceReceiver,
 } from '@discordjs/voice';
 import {
   Client,
@@ -42,6 +41,8 @@ const voicePlayers = new Map<string, ReturnType<typeof createAudioPlayer>>();
 const musicQueues = new Map<string, { link: string; title: string }[]>();
 const initialInteractions = new Map();
 const playingNow = new Map();
+const userSpeaking = new Set<string>();
+const recordingsDir = path.resolve(__dirname, '../../../x-project/recordings/');
 
 class VoiceService {
   private currentVolume: number = 0.1;
@@ -429,8 +430,6 @@ class VoiceService {
   }
 
   async record(interaction: any) {
-    const recordingsDir = path.resolve(__dirname, '../../../x-project/recordings/');
-
     if (!fs.existsSync(recordingsDir)) {
       fs.mkdirSync(recordingsDir, { recursive: true });
     }
@@ -438,68 +437,25 @@ class VoiceService {
     const voiceConnection =
       (await voiceConnections.get(interaction.guild.id)) || (await voiceService.connect(interaction, false, true));
     voiceConnection.selfDeaf = false;
-    const receiver = voiceConnection.receiver;
 
-    const userId = interaction.user.id;
-    const displayName = await this.getDisplayName(userId, interaction.user);
-    const filename = `${recordingsDir}/${Date.now()}-${displayName}.ogg`;
+    await voiceConnection.receiver.speaking.on('start', (userId: string) => {
+      if (userSpeaking.has(userId)) {
+        console.log(`Usuário ${userId} já está sendo gravado.`);
+        return;
+      }
+      userSpeaking.add(userId);
+      console.log(`Evento 'start' recebido para o usuário: ${userId}`);
 
-    try {
-      // Stream de áudio do usuário
-      const opusStream = receiver.subscribe(userId, {
+      const audioStream = voiceConnection.receiver.subscribe(userId, {
         end: {
-          behavior: EndBehaviorType.AfterSilence,
-          duration: 1000,
+          EndBehaviorType: EndBehaviorType.AfterSilence,
+          duration: 30000,
         },
       });
 
-      // Verificar se o stream está sendo capturado corretamente
-      if (!opusStream) {
-        console.error('❌ Failed to capture audio stream.');
-        return;
-      }
-
-      // Decodificar áudio Opus para PCM
-      const pcmStream = new prism.opus.Decoder({
-        frameSize: 960, // Tamanho do frame
-        sampleRate: 48000, // Taxa de amostragem padrão do Discord (48 kHz)
-        channels: 2, // Dois canais (estéreo)
-      });
-
-      // Usar ffmpeg para converter PCM em OGG
-      const ffmpeg = spawn('ffmpeg', [
-        '-f',
-        's16le', // Formato de entrada PCM
-        '-ar',
-        '48000', // Taxa de amostragem (48 kHz)
-        '-ac',
-        '2', // Número de canais
-        '-i',
-        'pipe:0', // Entrada padrão
-        '-c:a',
-        'libopus', // Codec Opus
-        '-b:a',
-        '128k', // Taxa de bits
-        filename, // Arquivo de saída
-      ]);
-
-      // Conectar streams
-      pipeline(opusStream, pcmStream, ffmpeg.stdin, err => {
-        if (err) {
-          console.error(`❌ Error during recording pipeline: ${err.message}`);
-        } else {
-          console.log(`✅ Recorded ${filename}`);
-        }
-      });
-
-      ffmpeg.on('close', code => {
-        if (code !== 0) {
-          console.error(`❌ ffmpeg process exited with code ${code}`);
-        }
-      });
-    } catch (error) {
-      console.error(`❌ Error during recording: ${error}`);
-    }
+      let outputStream = fs.createWriteStream(path.join(recordingsDir, `audio-${userId}-${Date.now()}.pcm`));
+      audioStream.pipe(outputStream);
+    });
   }
 
   async disconnect(interaction: any) {
