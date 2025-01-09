@@ -5,7 +5,7 @@ config.json
 node_modules
 dist
 private_assets
-src/recordings
+recordings
 
 # compiled output
 /dist

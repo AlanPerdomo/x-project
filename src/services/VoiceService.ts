@@ -28,6 +28,8 @@ import { spawn } from 'child_process';
 import ytdl from '@distube/ytdl-core';
 import { playerRow, radioRow } from '../buttons/PlayerButtons';
 import { pipeline } from 'stream';
+import ffmpegStatic from 'ffmpeg-static';
+import ffmpeg from 'fluent-ffmpeg';
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -437,6 +439,7 @@ class VoiceService {
     const voiceConnection =
       (await voiceConnections.get(interaction.guild.id)) || (await voiceService.connect(interaction, false, true));
     voiceConnection.selfDeaf = false;
+    voiceConnection.selfMute = false;
 
     await voiceConnection.receiver.speaking.on('start', (userId: string) => {
       if (userSpeaking.has(userId)) {
@@ -446,16 +449,58 @@ class VoiceService {
       userSpeaking.add(userId);
       console.log(`Evento 'start' recebido para o usuário: ${userId}`);
 
+      const rawFilePath = path.join(recordingsDir, `audio-${userId}-${Date.now()}.pcm`);
+      const outputFilePath = rawFilePath.replace('.pcm', '.wav');
+
       const audioStream = voiceConnection.receiver.subscribe(userId, {
         end: {
           EndBehaviorType: EndBehaviorType.AfterSilence,
-          duration: 30000,
+          duration: 1000,
         },
       });
 
-      let outputStream = fs.createWriteStream(path.join(recordingsDir, `audio-${userId}-${Date.now()}.pcm`));
+      const outputStream = fs.createWriteStream(rawFilePath);
       audioStream.pipe(outputStream);
+
+      audioStream.on('end', async () => {
+        console.log(`Gravação encerrada para o usuário ${userId}.`);
+        userSpeaking.delete(userId);
+        outputStream.close();
+        await this.convertPcmToWav(rawFilePath, outputFilePath);
+      });
+
+      audioStream.on('close', () => {
+        console.log(`Fluxo de áudio fechado para o usuário ${userId}.`);
+        outputStream.end();
+        audioStream.destroy();
+      });
+
+      setTimeout(async () => {
+        if (!audioStream.destroyed) {
+          console.log(`Tempo limite atingido para o usuário ${userId}. Encerrando gravação.`);
+          audioStream.destroy();
+          await this.convertPcmToWav(rawFilePath, outputFilePath);
+        }
+      }, 30000);
     });
+  }
+
+  async convertPcmToWav(inputPath: string, outputPath: string) {
+    console.log(`Iniciando conversão de ${inputPath} para ${outputPath}...`);
+
+    ffmpeg(inputPath)
+      .setFfmpegPath(ffmpegStatic as string)
+      .inputOptions(['-f s16le', '-ar 48000', '-ac 2'])
+      .outputOptions(['-ar 48000', '-ac 2', '-f wav'])
+      .on('end', () => {
+        console.log(`Conversão concluída: ${outputPath}`);
+
+        fs.unlinkSync(inputPath);
+      })
+      .on('error', (err: any) => {
+        console.error(`Erro na conversão de ${inputPath}:`, err);
+      })
+      .save(outputPath);
   }
 
   async disconnect(interaction: any) {
